@@ -1,0 +1,4 @@
+/netbird-cli
+*.exe
+*.test
+*.out

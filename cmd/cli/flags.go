@@ -1,0 +1,71 @@
+package main
+
+var (
+	nameFlag            string
+	emailFlag           string
+	roleFlag            string
+	descFlag            string
+	ipFlag              string
+	addrFlag            string
+	keyTypeFlag         string
+	dnsTypeFlag         string
+	modeFlag            string
+	protocolFlag        string
+	actionFlag          string
+	statusFlag          string
+	peerFlag            string
+	cidrFlag            string
+	domainFlag          string
+	contentFlag         string
+	searchFlag          string
+	networkFlag         string
+	zoneFlag            string
+	userFlag            string
+	fileFlag            string
+	idpTypeFlag         string
+	issuerFlag          string
+	clientIDFlag        string
+	clientSecretFlag    string
+	passwordFlag        string
+
+	sshFlag             bool
+	loginExpFlag        bool
+	inactivityExpFlag   bool
+	enabledFlag         bool
+	disabledFlag        bool
+	revokedFlag         bool
+	ephemeralFlag       bool
+	allowDNSLabelsFlag  bool
+	isServiceUserFlag   bool
+	isBlockedFlag       bool
+	primaryFlag         bool
+	searchDomainFlag    bool
+	masqueradeFlag      bool
+	keepRouteFlag       bool
+	bidirectionalFlag   bool
+	skipAutoApplyFlag   bool
+	peerApprovalFlag    bool
+
+	expireFlag         int
+	inviteExpireFlag   int
+	usageLimitFlag     int
+	portFlag           int
+	listenPortFlag     int
+	metricFlag         int
+	ttlFlag            int
+	pageFlag           int
+	pageSizeFlag       int
+	peerLoginExpFlag   int
+	peerInactivityExpFlag int
+	patExpireFlag      int
+
+	autoGroupsFlag    []string
+	groupsFlag        []string
+	peersFlag         []string
+	nameserversFlag   []string
+	domainsFlag       []string
+	portsFlag         []string
+	cidrsFlag         []string
+	countriesFlag     []string
+	distGroupsFlag    []string
+)
