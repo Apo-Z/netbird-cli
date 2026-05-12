@@ -157,7 +157,8 @@ func getTableFields(v reflect.Value) []tableField {
 			name == "user_id" || name == "city_name" ||
 			name == "country_code" || name == "geoname_id" ||
 			name == "last_login" || name == "created_at" ||
-			name == "expires" || name == "mode" ||
+			name == "expires" || name == "expires_at" ||
+			name == "expired" || name == "mode" ||
 			name == "activity" || name == "activity_code" ||
 			name == "timestamp" || name == "target_id" ||
 			name == "initiator_email" || name == "initiator_name" ||

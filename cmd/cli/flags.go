@@ -38,6 +38,7 @@ var (
 	allowDNSLabelsFlag  bool
 	isServiceUserFlag   bool
 	isBlockedFlag       bool
+	inviteFlag          bool
 	primaryFlag         bool
 	searchDomainFlag    bool
 	masqueradeFlag      bool

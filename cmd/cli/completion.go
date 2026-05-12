@@ -19,6 +19,12 @@ func validArgsFunc(fetch func() ([]string, error)) func(cmd *cobra.Command, args
 	}
 }
 
+func staticCompletion(options []string) func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	return func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return options, cobra.ShellCompDirectiveNoFileComp
+	}
+}
+
 func userNames() ([]string, error) {
 	users, err := c.GetUsers()
 	if err != nil {
@@ -172,4 +178,16 @@ func idpNames() ([]string, error) {
 		names = append(names, fmt.Sprintf("%s\t(id=%s)", i.Name, i.ID))
 	}
 	return names, nil
+}
+
+func inviteNames() ([]string, error) {
+	invites, err := c.GetUserInvites()
+	if err != nil {
+		return nil, err
+	}
+	var items []string
+	for _, inv := range invites {
+		items = append(items, fmt.Sprintf("%s\t(name=%s)", inv.Email, inv.Name))
+	}
+	return items, nil
 }

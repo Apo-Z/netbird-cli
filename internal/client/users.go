@@ -200,6 +200,19 @@ func (c *Client) GetUserInvites() ([]Invite, error) {
 	return bodyToSlice[Invite](resp.Body)
 }
 
+func (c *Client) GetInvite(nameOrEmailOrID string) (*Invite, error) {
+	invites, err := c.GetUserInvites()
+	if err != nil {
+		return nil, err
+	}
+	for _, inv := range invites {
+		if inv.Email == nameOrEmailOrID || inv.Name == nameOrEmailOrID || inv.ID == nameOrEmailOrID {
+			return &inv, nil
+		}
+	}
+	return nil, fmt.Errorf("invitation %s not found", nameOrEmailOrID)
+}
+
 func (c *Client) CreateUserInvite(req *CreateInviteRequest) (*Invite, error) {
 	resp, err := c.doPost("/api/users/invites", req)
 	if err != nil {

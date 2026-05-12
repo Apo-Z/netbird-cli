@@ -45,6 +45,8 @@ func init() {
 
 	createCmd.PersistentFlags().BoolVar(&editFlag, "edit", false, "Open editor to fill in the manifest")
 
+	rootCmd.RegisterFlagCompletionFunc("output", staticCompletion([]string{"json", "yaml"}))
+
 	rootCmd.AddCommand(getCmd, createCmd, editCmd, deleteCmd)
 }
 

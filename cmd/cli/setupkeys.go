@@ -149,4 +149,8 @@ func init() {
 
 	setupkeyEditCmd.Flags().BoolVar(&revokedFlag, "revoked", false, "Revoke key")
 	setupkeyEditCmd.Flags().StringSliceVar(&autoGroupsFlag, "auto-groups", nil, "IDs or names of auto-assigned groups")
+
+	setupkeyCreateCmd.RegisterFlagCompletionFunc("type", staticCompletion([]string{"one-off", "reusable"}))
+	setupkeyCreateCmd.RegisterFlagCompletionFunc("auto-groups", validArgsFunc(groupNames))
+	setupkeyEditCmd.RegisterFlagCompletionFunc("auto-groups", validArgsFunc(groupNames))
 }

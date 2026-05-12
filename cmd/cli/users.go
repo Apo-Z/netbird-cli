@@ -36,9 +36,32 @@ var usersGetCmd = &cobra.Command{
 var userCreateCmd = &cobra.Command{
 	Use:     "user",
 	Aliases: []string{"usr"},
-	Short:   "Create a user (service user or invitation)",
+	Short:   "Create a user or send an invitation (use --invite for invitations)",
 	Run: func(cmd *cobra.Command, args []string) {
 		if editFlag {
+			if inviteFlag {
+				result, err := createWithEditor("/api/users/invites", map[string]interface{}{
+					"email":       "",
+					"name":        "",
+					"role":        "user",
+					"auto_groups": []string{},
+					"expires_in":  259200,
+				})
+				if err != nil {
+					exitErr("create invite", err)
+					return
+				}
+				data, err := c.PostRaw("/api/users/invites", result)
+				if err != nil {
+					exitErr("create invite", err)
+					return
+				}
+				var invite client.Invite
+				json.Unmarshal(data, &invite)
+				fmt.Println("invitation created:")
+				printOutput(invite)
+				return
+			}
 			result, err := createWithEditor("/api/users", map[string]interface{}{
 				"email":          "",
 				"name":           "",
@@ -59,6 +82,25 @@ var userCreateCmd = &cobra.Command{
 			json.Unmarshal(data, &user)
 			fmt.Println("user created:")
 			printOutput(user)
+			return
+		}
+		if inviteFlag {
+			req := &client.CreateInviteRequest{
+				Email:      emailFlag,
+				Name:       nameFlag,
+				Role:       roleFlag,
+				AutoGroups: autoGroupsFlag,
+				ExpiresIn:  inviteExpireFlag,
+			}
+			if dryRunCheck(req) {
+				return
+			}
+			invite, err := c.CreateUserInvite(req)
+			if err != nil {
+				fmt.Printf("error: %s\n", err)
+				return
+			}
+			printOutput(invite)
 			return
 		}
 		req := &client.CreateUserRequest{
@@ -256,14 +298,20 @@ var inviteCreateCmd = &cobra.Command{
 }
 
 var inviteDeleteCmd = &cobra.Command{
-	Use:   "delete <invite-id>",
-	Short: "Delete an invitation",
-	Args:  cobra.ExactArgs(1),
+	Use:               "delete <name|email|id>",
+	Short:             "Delete an invitation",
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: validArgsFunc(inviteNames),
 	Run: func(cmd *cobra.Command, args []string) {
+		invite, err := c.GetInvite(args[0])
+		if err != nil {
+			fmt.Printf("error: %s\n", err)
+			return
+		}
 		if dryRunMsg(fmt.Sprintf("would delete invitation %s", args[0])) {
 			return
 		}
-		if err := c.DeleteUserInvite(args[0]); err != nil {
+		if err := c.DeleteUserInvite(invite.ID); err != nil {
 			fmt.Printf("error: %s\n", err)
 			return
 		}
@@ -284,6 +332,31 @@ var inviteListCmd = &cobra.Command{
 	},
 }
 
+var inviteRegenerateCmd = &cobra.Command{
+	Use:               "regenerate <name|email|id>",
+	Aliases:           []string{"regen"},
+	Short:             "Regenerate an invitation token",
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: validArgsFunc(inviteNames),
+	Run: func(cmd *cobra.Command, args []string) {
+		invite, err := c.GetInvite(args[0])
+		if err != nil {
+			fmt.Printf("error: %s\n", err)
+			return
+		}
+		req := &client.RegenerateInviteRequest{ExpiresIn: inviteExpireFlag}
+		if dryRunCheck(req) {
+			return
+		}
+		regenerated, err := c.RegenerateUserInvite(invite.ID, req)
+		if err != nil {
+			fmt.Printf("error: %s\n", err)
+			return
+		}
+		printOutput(regenerated)
+	},
+}
+
 var whoamiCmd = &cobra.Command{
 	Use:   "whoami",
 	Short: "Show current user",
@@ -297,19 +370,70 @@ var whoamiCmd = &cobra.Command{
 	},
 }
 
+var invitesGetCmd = &cobra.Command{
+	Use:               "invites [name|email|id]",
+	Aliases:           []string{"inv"},
+	Short:             "List or display invitations",
+	ValidArgsFunction: validArgsFunc(inviteNames),
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) == 0 {
+			invites, err := c.GetUserInvites()
+			if err != nil {
+				fmt.Printf("error: %s\n", err)
+				return
+			}
+			printOutput(invites)
+			return
+		}
+		invite, err := c.GetInvite(args[0])
+		if err != nil {
+			fmt.Printf("error: %s\n", err)
+			return
+		}
+		printOutput(invite)
+	},
+}
+
+var invitesDeleteCmd = &cobra.Command{
+	Use:               "invites <name|email|id>",
+	Aliases:           []string{"inv"},
+	Short:             "Delete an invitation",
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: validArgsFunc(inviteNames),
+	Run: func(cmd *cobra.Command, args []string) {
+		invite, err := c.GetInvite(args[0])
+		if err != nil {
+			fmt.Printf("error: %s\n", err)
+			return
+		}
+		if dryRunMsg(fmt.Sprintf("would delete invitation %s", args[0])) {
+			return
+		}
+		if err := c.DeleteUserInvite(invite.ID); err != nil {
+			fmt.Printf("error: %s\n", err)
+			return
+		}
+		fmt.Println("invitation deleted")
+	},
+}
+
 func init() {
 	getCmd.AddCommand(usersGetCmd)
+	getCmd.AddCommand(invitesGetCmd)
 	createCmd.AddCommand(userCreateCmd)
 	editCmd.AddCommand(userEditCmd)
 	deleteCmd.AddCommand(userDeleteCmd)
+	deleteCmd.AddCommand(invitesDeleteCmd)
 	rootCmd.AddCommand(approveCmd, blockCmd, unblockCmd, inviteCmd, whoamiCmd)
-	inviteCmd.AddCommand(inviteListCmd, inviteCreateCmd, inviteDeleteCmd)
+	inviteCmd.AddCommand(inviteListCmd, inviteCreateCmd, inviteDeleteCmd, inviteRegenerateCmd)
 
 	userCreateCmd.Flags().StringVar(&emailFlag, "email", "", "Email")
 	userCreateCmd.Flags().StringVar(&nameFlag, "name", "", "Full name")
 	userCreateCmd.Flags().StringVar(&roleFlag, "role", "user", "Role (admin/user)")
 	userCreateCmd.Flags().StringSliceVar(&autoGroupsFlag, "auto-groups", nil, "IDs or names of auto-assigned groups")
 	userCreateCmd.Flags().BoolVar(&isServiceUserFlag, "service", false, "Service user")
+	userCreateCmd.Flags().BoolVar(&inviteFlag, "invite", false, "Send an invitation instead of creating directly")
+	userCreateCmd.Flags().IntVar(&inviteExpireFlag, "expire", 259200, "Invitation expiration in seconds (only with --invite)")
 
 	userEditCmd.Flags().StringVar(&nameFlag, "name", "", "New name")
 	userEditCmd.Flags().StringVar(&roleFlag, "role", "", "New role")
@@ -321,4 +445,13 @@ func init() {
 	inviteCreateCmd.Flags().StringVar(&roleFlag, "role", "user", "Role")
 	inviteCreateCmd.Flags().StringSliceVar(&autoGroupsFlag, "auto-groups", nil, "IDs or names of groups")
 	inviteCreateCmd.Flags().IntVar(&inviteExpireFlag, "expire", 259200, "Expiration in seconds")
+
+	inviteRegenerateCmd.Flags().IntVar(&inviteExpireFlag, "expire", 259200, "New expiration in seconds")
+
+	userCreateCmd.RegisterFlagCompletionFunc("role", staticCompletion([]string{"admin", "user"}))
+	userCreateCmd.RegisterFlagCompletionFunc("auto-groups", validArgsFunc(groupNames))
+	userEditCmd.RegisterFlagCompletionFunc("role", staticCompletion([]string{"admin", "user"}))
+	userEditCmd.RegisterFlagCompletionFunc("auto-groups", validArgsFunc(groupNames))
+	inviteCreateCmd.RegisterFlagCompletionFunc("role", staticCompletion([]string{"admin", "user"}))
+	inviteCreateCmd.RegisterFlagCompletionFunc("auto-groups", validArgsFunc(groupNames))
 }
