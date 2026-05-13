@@ -132,16 +132,36 @@ type tableField struct {
 func getTableFields(v reflect.Value) []tableField {
 	t := v.Type()
 	var fields []tableField
+	collectTableFields(v, t, &fields)
 
+	if len(fields) == 0 {
+		for i := 0; i < t.NumField() && i < 4; i++ {
+			f := t.Field(i)
+			tag := f.Tag.Get("json")
+			if tag != "" && tag != "-" {
+				name := strings.Split(tag, ",")[0]
+				fields = append(fields, tableField{label: name, name: name})
+			}
+		}
+	}
+
+	return fields
+}
+
+func collectTableFields(v reflect.Value, t reflect.Type, fields *[]tableField) {
 	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)
+		if f.Anonymous {
+			collectTableFields(v.Field(i), f.Type, fields)
+			continue
+		}
 		tag := f.Tag.Get("json")
 		if tag == "" || tag == "-" {
 			continue
 		}
 		name := strings.Split(tag, ",")[0]
 
-		if name == "id" || name == "name" || name == "email" ||
+		if name == "name" || name == "email" ||
 			name == "ip" || name == "role" || name == "status" ||
 			name == "connected" || name == "domain" ||
 			name == "enabled" || name == "description" ||
@@ -149,14 +169,11 @@ func getTableFields(v reflect.Value) []tableField {
 			name == "peers_count" || name == "resources_count" ||
 			name == "valid" || name == "state" ||
 			name == "used_times" || name == "last_used" ||
-			name == "network" || name == "metric" ||
-			name == "type" || name == "address" ||
+			name == "network" || name == "network_name" ||
+			name == "metric" || name == "type" || name == "address" ||
 			name == "peers" || name == "groups" ||
-			name == "issued" ||
 			name == "version" || name == "dns_label" ||
-			name == "user_id" || name == "city_name" ||
-			name == "country_code" || name == "geoname_id" ||
-			name == "last_login" || name == "created_at" ||
+			name == "user_id" || name == "peer" || name == "created_by" ||
 			name == "expires" || name == "expires_at" ||
 			name == "expired" || name == "mode" ||
 			name == "activity" || name == "activity_code" ||
@@ -176,40 +193,17 @@ func getTableFields(v reflect.Value) []tableField {
 			name == "bytes_upload" || name == "bytes_download" ||
 			name == "auth_method_used" || name == "subdivision_code" ||
 			name == "metadata" || name == "geo_location" {
-			fields = append(fields, tableField{label: name, name: name})
-		}
-	}
-
-	if len(fields) == 0 {
-		for i := 0; i < t.NumField() && i < 4; i++ {
-			f := t.Field(i)
-			tag := f.Tag.Get("json")
-			if tag != "" && tag != "-" {
-				name := strings.Split(tag, ",")[0]
-				fields = append(fields, tableField{label: name, name: name})
+			label := name
+			if name == "user_id" {
+				label = "user"
 			}
+			*fields = append(*fields, tableField{label: label, name: name})
 		}
 	}
-
-	return fields
 }
 
 func formatField(v reflect.Value, f tableField) string {
-	field := v.FieldByNameFunc(func(name string) bool {
-		t := v.Type()
-		for i := 0; i < t.NumField(); i++ {
-			sf := t.Field(i)
-			tag := sf.Tag.Get("json")
-			if tag == "" {
-				continue
-			}
-			tagName := strings.Split(tag, ",")[0]
-			if tagName == f.name && sf.Name == name {
-				return true
-			}
-		}
-		return false
-	})
+	field := findFieldByJSONTag(v, f.name)
 
 	if !field.IsValid() {
 		return ""
@@ -217,7 +211,18 @@ func formatField(v reflect.Value, f tableField) string {
 
 	switch field.Kind() {
 	case reflect.String:
-		return field.String()
+		s := field.String()
+		switch f.name {
+		case "user_id", "created_by", "initiator_id":
+			if name := c.IDToName("user", s); name != "" {
+				return name
+			}
+		case "peer", "reporter_id", "target_id":
+			if name := c.IDToName("peer", s); name != "" {
+				return name
+			}
+		}
+		return s
 	case reflect.Bool:
 		if field.Bool() {
 			return "yes"
@@ -254,6 +259,28 @@ func formatField(v reflect.Value, f tableField) string {
 	default:
 		return fmt.Sprintf("%v", field.Interface())
 	}
+}
+
+func findFieldByJSONTag(v reflect.Value, jsonName string) reflect.Value {
+	t := v.Type()
+	for i := 0; i < t.NumField(); i++ {
+		sf := t.Field(i)
+		if sf.Anonymous {
+			if fv := findFieldByJSONTag(v.Field(i), jsonName); fv.IsValid() {
+				return fv
+			}
+			continue
+		}
+		tag := sf.Tag.Get("json")
+		if tag == "" || tag == "-" {
+			continue
+		}
+		tagName := strings.Split(tag, ",")[0]
+		if tagName == jsonName {
+			return v.Field(i)
+		}
+	}
+	return reflect.Value{}
 }
 
 func printKeyValue(v reflect.Value) {

@@ -178,23 +178,49 @@ var networkDeleteCmd = &cobra.Command{
 }
 
 var networkresourcesGetCmd = &cobra.Command{
-	Use:               "networkresources <network-name|id>",
+	Use:               "networkresources [network-name|id]",
 	Aliases:           []string{"nwr"},
-	Short:             "List network resources",
-	Args:              cobra.ExactArgs(1),
+	Short:             "List network resources (all networks if no arg)",
+	Args:              cobra.MaximumNArgs(1),
 	ValidArgsFunction: validArgsFunc(networkNames),
 	Run: func(cmd *cobra.Command, args []string) {
-		id, err := c.ResolveNetworkID(args[0])
+		if len(args) == 1 {
+			id, err := c.ResolveNetworkID(args[0])
+			if err != nil {
+				fmt.Printf("error: %s\n", err)
+				return
+			}
+			resources, err := c.GetNetworkResources(id)
+			if err != nil {
+				fmt.Printf("error: %s\n", err)
+				return
+			}
+			printOutput(resources)
+			return
+		}
+		networks, err := c.GetNetworks()
 		if err != nil {
 			fmt.Printf("error: %s\n", err)
 			return
 		}
-		resources, err := c.GetNetworkResources(id)
-		if err != nil {
-			fmt.Printf("error: %s\n", err)
-			return
+		type resourceWithNetwork struct {
+			NetworkName string `json:"network_name"`
+			client.NetworkResource
 		}
-		printOutput(resources)
+		var allResources []resourceWithNetwork
+		for _, nw := range networks {
+			resources, err := c.GetNetworkResources(nw.ID)
+			if err != nil {
+				continue
+			}
+			for _, r := range resources {
+				allResources = append(allResources, resourceWithNetwork{
+					NetworkName:     nw.Name,
+					NetworkResource: r,
+				})
+			}
+		}
+		printOutput(allResources)
 	},
 }
 
