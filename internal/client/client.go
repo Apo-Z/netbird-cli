@@ -25,6 +25,13 @@ func NewNetbirdClient(apiURL, token string) (*Client, error) {
 	apiURL = strings.TrimRight(apiURL, "/")
 	apiURL = strings.TrimSuffix(apiURL, "/api")
 
+	if apiURL == "" {
+		return nil, fmt.Errorf("API URL is not configured")
+	}
+	if token == "" {
+		return nil, fmt.Errorf("API token is not configured")
+	}
+
 	client := &Client{
 		Client:    &http.Client{},
 		URL:       apiURL,
