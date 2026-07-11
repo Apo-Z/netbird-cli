@@ -105,8 +105,8 @@ func printSliceTable(slice reflect.Value) {
 	}
 	for _, row := range rows {
 		for i, cell := range row {
-			if len(cell) > colWidths[i] {
-				colWidths[i] = len(cell)
+			if l := len(stripANSI(cell)); l > colWidths[i] {
+				colWidths[i] = l
 			}
 		}
 	}
@@ -118,7 +118,12 @@ func printSliceTable(slice reflect.Value) {
 
 	for _, row := range rows {
 		for i, cell := range row {
-			fmt.Printf("%-*s  ", colWidths[i], cell)
+			fmt.Print(cell)
+			pad := colWidths[i] - len(stripANSI(cell))
+			if pad > 0 {
+				fmt.Print(strings.Repeat(" ", pad))
+			}
+			fmt.Print("  ")
 		}
 		fmt.Println()
 	}
@@ -221,13 +226,24 @@ func formatField(v reflect.Value, f tableField) string {
 			if name := c.IDToName("peer", s); name != "" {
 				return name
 			}
+		case "status":
+			return colorStatus(s)
+		case "state":
+			return colorState(s)
 		}
 		return s
 	case reflect.Bool:
-		if field.Bool() {
-			return "yes"
+		switch f.name {
+		case "connected":
+			return colorBool(field.Bool(), "online", "offline")
+		case "enabled":
+			return colorBool(field.Bool(), "enabled", "disabled")
+		case "expired":
+			return colorBool(!field.Bool(), "valid", "expired")
+		case "valid":
+			return colorBool(field.Bool(), "yes", "no")
 		}
-		return "no"
+		return colorBool(field.Bool(), "yes", "no")
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		return fmt.Sprintf("%d", field.Int())
 	case reflect.Float32, reflect.Float64:
@@ -297,7 +313,7 @@ func printKeyValue(v reflect.Value) {
 		name := strings.Split(tag, ",")[0]
 		field := v.Field(i)
 
-		val := formatFieldValue(field)
+		val := formatFieldValue(field, name)
 		if val == "" || val == "nil" {
 			continue
 		}
@@ -313,22 +329,36 @@ func printKeyValue(v reflect.Value) {
 	}
 }
 
-func formatFieldValue(field reflect.Value) string {
+func formatFieldValue(field reflect.Value, jsonName string) string {
 	if field.Kind() == reflect.Ptr {
 		if field.IsNil() {
 			return ""
 		}
-		return formatFieldValue(field.Elem())
+		return formatFieldValue(field.Elem(), jsonName)
 	}
 
 	switch field.Kind() {
 	case reflect.String:
-		return field.String()
-	case reflect.Bool:
-		if field.Bool() {
-			return "yes"
+		s := field.String()
+		switch jsonName {
+		case "status":
+			return colorStatus(s)
+		case "state":
+			return colorState(s)
 		}
-		return "no"
+		return s
+	case reflect.Bool:
+		switch jsonName {
+		case "connected":
+			return colorBool(field.Bool(), "online", "offline")
+		case "enabled":
+			return colorBool(field.Bool(), "enabled", "disabled")
+		case "expired":
+			return colorBool(!field.Bool(), "valid", "expired")
+		case "valid":
+			return colorBool(field.Bool(), "yes", "no")
+		}
+		return colorBool(field.Bool(), "yes", "no")
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		return fmt.Sprintf("%d", field.Int())
 	case reflect.Float32, reflect.Float64:
