@@ -31,6 +31,11 @@ var applyCmd = &cobra.Command{
 			Policies  []applyPolicy   `yaml:"policies"`
 		SetupKeys []applySetupKey `yaml:"setupkeys"`
 		Accounts  []applyAccount  `yaml:"accounts"`
+
+			AgentProviders []client.AgentProviderRequest   `yaml:"agentproviders"`
+			Guardrails     []client.AgentGuardrailRequest  `yaml:"guardrails"`
+			AgentPolicies  []client.AgentPolicyRequest     `yaml:"agentpolicies"`
+			BudgetRules    []client.AgentBudgetRuleRequest `yaml:"budgetrules"`
 	}
 	if err := yaml.Unmarshal(data, &spec); err != nil {
 			exitErr("YAML parsing", err)
@@ -179,7 +184,104 @@ var applyCmd = &cobra.Command{
 			c.PutRaw(fmt.Sprintf("/api/accounts/%s", accounts[0].ID), acct)
 			fmt.Println("account updated")
 		}
+
+		applyAgentNetwork(spec.AgentProviders, spec.Guardrails, spec.AgentPolicies, spec.BudgetRules)
 	},
+}
+
+// applyAgentNetwork creates or updates (matched by name) Agent Network resources,
+// in dependency order: providers and guardrails before the policies that reference them.
+func applyAgentNetwork(providers []client.AgentProviderRequest, guardrails []client.AgentGuardrailRequest,
+	policies []client.AgentPolicyRequest, rules []client.AgentBudgetRuleRequest) {
+	enabled := func(b *bool) *bool {
+		if b == nil {
+			t := true
+			return &t
+		}
+		return b
+	}
+
+	for _, p := range providers {
+		p.APIKey = os.ExpandEnv(p.APIKey)
+		p.Enabled = enabled(p.Enabled)
+		id, err := c.ResolveAgentProviderID(p.Name)
+		if dryRun {
+			action := "create"
+			if err == nil {
+				action = "update"
+			}
+			fmt.Printf("[dry-run] would %s agent provider %s (%s, %s)\n", action, p.Name, p.ProviderID, p.UpstreamURL)
+			continue
+		}
+		if err == nil {
+			_, err = c.UpdateAgentProvider(id, &p)
+			reportApply("agent provider", p.Name, "updated", err)
+		} else {
+			_, err = c.CreateAgentProvider(&p)
+			reportApply("agent provider", p.Name, "created", err)
+		}
+	}
+
+	for _, g := range guardrails {
+		id, err := c.ResolveAgentGuardrailID(g.Name)
+		if dryRun {
+			fmt.Printf("[dry-run] would %s guardrail %s\n", map[bool]string{true: "update", false: "create"}[err == nil], g.Name)
+			continue
+		}
+		if err == nil {
+			_, err = c.UpdateAgentGuardrail(id, &g)
+			reportApply("guardrail", g.Name, "updated", err)
+		} else {
+			_, err = c.CreateAgentGuardrail(&g)
+			reportApply("guardrail", g.Name, "created", err)
+		}
+	}
+
+	for _, pol := range policies {
+		pol.Enabled = enabled(pol.Enabled)
+		pol.SourceGroups = resolveAll("group", pol.SourceGroups)
+		pol.DestinationProviderIDs = resolveAll("agentprovider", pol.DestinationProviderIDs)
+		pol.GuardrailIDs = resolveAll("guardrail", pol.GuardrailIDs)
+		id, err := c.ResolveAgentPolicyID(pol.Name)
+		if dryRun {
+			fmt.Printf("[dry-run] would %s agent policy %s\n", map[bool]string{true: "update", false: "create"}[err == nil], pol.Name)
+			fmt.Printf("  source_groups: %v\n  providers: %v\n  guardrails: %v\n", pol.SourceGroups, pol.DestinationProviderIDs, pol.GuardrailIDs)
+			continue
+		}
+		if err == nil {
+			_, err = c.UpdateAgentPolicy(id, &pol)
+			reportApply("agent policy", pol.Name, "updated", err)
+		} else {
+			_, err = c.CreateAgentPolicy(&pol)
+			reportApply("agent policy", pol.Name, "created", err)
+		}
+	}
+
+	for _, r := range rules {
+		r.Enabled = enabled(r.Enabled)
+		r.TargetGroups = nonNil(resolveAll("group", r.TargetGroups))
+		r.TargetUsers = nonNil(resolveAll("user", r.TargetUsers))
+		id, err := c.ResolveAgentBudgetRuleID(r.Name)
+		if dryRun {
+			fmt.Printf("[dry-run] would %s budget rule %s\n", map[bool]string{true: "update", false: "create"}[err == nil], r.Name)
+			continue
+		}
+		if err == nil {
+			_, err = c.UpdateAgentBudgetRule(id, &r)
+			reportApply("budget rule", r.Name, "updated", err)
+		} else {
+			_, err = c.CreateAgentBudgetRule(&r)
+			reportApply("budget rule", r.Name, "created", err)
+		}
+	}
+}
+
+func reportApply(kind, name, action string, err error) {
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error applying %s %s: %s\n", kind, name, err)
+		return
+	}
+	fmt.Printf("%s %s %s\n", kind, name, action)
 }
 
 type applyGroup struct {
@@ -231,6 +333,10 @@ func resolveAll(resourceType string, names []string) []string {
 			id, err = c.ResolveUserID(n)
 		case "peer":
 			id, err = c.ResolvePeerID(n)
+		case "agentprovider":
+			id, err = c.ResolveAgentProviderID(n)
+		case "guardrail":
+			id, err = c.ResolveAgentGuardrailID(n)
 		default:
 			id = n
 		}

@@ -1,5 +1,7 @@
 package main
 
+import "time"
+
 var (
 	nameFlag            string
 	emailFlag           string
@@ -27,6 +29,43 @@ var (
 	clientIDFlag        string
 	clientSecretFlag    string
 	passwordFlag        string
+	providerTypeFlag    string
+	upstreamURLFlag     string
+	apiKeyFlag          string
+	providerFlag        string
+	modelFlag           string
+	sessionFlag         string
+	groupFlag           string
+	decisionFlag        string
+	startFlag           string
+	endFlag             string
+	granularityFlag     string
+	sortByFlag          string
+	sortOrderFlag       string
+	proxyAddrFlag       string
+	endpointFlag        string
+	sinceFlag           string
+	platformFlag        string
+	notifTypeFlag       string
+	urlFlag             string
+	clusterFlag         string
+	directFlag          string
+	tenantIDFlag        string
+	secretFlag          string
+	apiTokenFlag        string
+	apiSecretFlag       string
+	cloudIDFlag         string
+	customerIDFlag      string
+	hostFlag            string
+	connectorIDFlag     string
+	connectionNameFlag  string
+	prefixFlag          string
+	ownerFlag           string
+	priceFlag           string
+	planFlag            string
+	baseURLFlag         string
+	portalReturnFlag    string
+	awsUserIDFlag       string
 
 	sshFlag             bool
 	loginExpFlag        bool
@@ -46,6 +85,16 @@ var (
 	bidirectionalFlag   bool
 	skipAutoApplyFlag   bool
 	peerApprovalFlag    bool
+	skipTLSFlag         bool
+	noMetadataFlag      bool
+	redactPIIFlag       bool
+	promptCaptureFlag   bool
+	logCollectionFlag   bool
+	promptCollectFlag   bool
+	sessionsFlag        bool
+	fallbackFlag        bool
+	csvFlag             bool
+	trialFlag           bool
 
 	expireFlag         int
 	inviteExpireFlag   int
@@ -59,6 +108,15 @@ var (
 	peerLoginExpFlag   int
 	peerInactivityExpFlag int
 	patExpireFlag      int
+	retentionDaysFlag  int
+	ztaThresholdFlag   int
+	syncIntervalFlag   int
+
+	tokenUserCapFlag   int64
+	tokenGroupCapFlag  int64
+	budgetUserCapFlag  float64
+	budgetGroupCapFlag float64
+	windowFlag         time.Duration
 
 	autoGroupsFlag    []string
 	groupsFlag        []string
@@ -69,4 +127,18 @@ var (
 	cidrsFlag         []string
 	countriesFlag     []string
 	distGroupsFlag    []string
+	modelsFlag        []string
+	sourceGroupsFlag  []string
+	providersFlag     []string
+	guardrailsFlag    []string
+	usersFlag         []string
+	emailsFlag        []string
+	eventTypesFlag    []string
+	rangesFlag        []string
+	groupPrefixesFlag     []string
+	userGroupPrefixesFlag []string
+	tenantGroupsFlag  []string
+
+	configFlag  map[string]string
+	headersFlag map[string]string
 )

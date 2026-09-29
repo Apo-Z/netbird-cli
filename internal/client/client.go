@@ -307,6 +307,14 @@ func (c *Client) IDToName(resource, id string) string {
 			}
 			c.mu.Unlock()
 		}
+	case "agentprovider":
+		fetch = func() { c.ResolveAgentProviderID("") }
+	case "agentpolicy":
+		fetch = func() { c.ResolveAgentPolicyID("") }
+	case "guardrail":
+		fetch = func() { c.ResolveAgentGuardrailID("") }
+	case "budgetrule":
+		fetch = func() { c.ResolveAgentBudgetRuleID("") }
 	default:
 		return ""
 	}

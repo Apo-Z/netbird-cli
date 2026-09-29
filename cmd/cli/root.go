@@ -39,6 +39,11 @@ var deleteCmd = &cobra.Command{
 	Short: "Delete a resource",
 }
 
+var regenerateCmd = &cobra.Command{
+	Use:   "regenerate <resource>",
+	Short: "Regenerate a secret (e.g. a SCIM token)",
+}
+
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&outputFormat, "output", "o", "", "Output format (json, yaml)")
 	rootCmd.PersistentFlags().BoolVar(&dryRun, "dry-run", false, "Show what would be done without executing")
@@ -47,7 +52,7 @@ func init() {
 
 	rootCmd.RegisterFlagCompletionFunc("output", staticCompletion([]string{"json", "yaml"}))
 
-	rootCmd.AddCommand(getCmd, createCmd, editCmd, deleteCmd)
+	rootCmd.AddCommand(getCmd, createCmd, editCmd, deleteCmd, regenerateCmd)
 }
 
 func exitErr(msg string, err error) {

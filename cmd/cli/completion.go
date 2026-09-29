@@ -191,3 +191,139 @@ func inviteNames() ([]string, error) {
 	}
 	return items, nil
 }
+
+func agentProviderNames() ([]string, error) {
+	providers, err := c.GetAgentProviders()
+	if err != nil {
+		return nil, err
+	}
+	var names []string
+	for _, p := range providers {
+		names = append(names, fmt.Sprintf("%s\t(%s)", p.Name, p.ProviderID))
+	}
+	return names, nil
+}
+
+func agentPolicyNames() ([]string, error) {
+	policies, err := c.GetAgentPolicies()
+	if err != nil {
+		return nil, err
+	}
+	var names []string
+	for _, p := range policies {
+		names = append(names, fmt.Sprintf("%s\t(id=%s)", p.Name, p.ID))
+	}
+	return names, nil
+}
+
+func guardrailNames() ([]string, error) {
+	guardrails, err := c.GetAgentGuardrails()
+	if err != nil {
+		return nil, err
+	}
+	var names []string
+	for _, g := range guardrails {
+		names = append(names, fmt.Sprintf("%s\t(id=%s)", g.Name, g.ID))
+	}
+	return names, nil
+}
+
+func budgetRuleNames() ([]string, error) {
+	rules, err := c.GetAgentBudgetRules()
+	if err != nil {
+		return nil, err
+	}
+	var names []string
+	for _, r := range rules {
+		names = append(names, fmt.Sprintf("%s\t(id=%s)", r.Name, r.ID))
+	}
+	return names, nil
+}
+
+func agentCatalogIDs() ([]string, error) {
+	catalog, err := c.GetAgentCatalogProviders()
+	if err != nil {
+		return nil, err
+	}
+	var ids []string
+	for _, p := range catalog {
+		ids = append(ids, fmt.Sprintf("%s\t%s", p.ID, p.Name))
+	}
+	return ids, nil
+}
+
+func eventStreamNames() ([]string, error) {
+	streams, err := c.GetEventStreams()
+	if err != nil {
+		return nil, err
+	}
+	var names []string
+	for _, s := range streams {
+		names = append(names, fmt.Sprintf("%d\t%s", s.ID, s.Platform))
+	}
+	return names, nil
+}
+
+func notificationTypeNames() ([]string, error) {
+	types, err := c.GetNotificationTypes()
+	if err != nil {
+		return nil, err
+	}
+	var names []string
+	for code, desc := range types {
+		names = append(names, fmt.Sprintf("%s\t%s", code, desc))
+	}
+	return names, nil
+}
+
+func domainNames() ([]string, error) {
+	domains, err := c.GetReverseProxyDomains()
+	if err != nil {
+		return nil, err
+	}
+	var names []string
+	for _, d := range domains {
+		if d.Type == "custom" {
+			names = append(names, d.Domain)
+		}
+	}
+	return names, nil
+}
+
+func proxyTokenNames() ([]string, error) {
+	tokens, err := c.GetProxyTokens()
+	if err != nil {
+		return nil, err
+	}
+	var names []string
+	for _, t := range tokens {
+		if !t.Revoked {
+			names = append(names, t.Name)
+		}
+	}
+	return names, nil
+}
+
+func proxyClusterNames() ([]string, error) {
+	clusters, err := c.GetProxyClusters()
+	if err != nil {
+		return nil, err
+	}
+	var names []string
+	for _, cl := range clusters {
+		names = append(names, cl.Address)
+	}
+	return names, nil
+}
+
+func tenantNames() ([]string, error) {
+	tenants, err := c.GetTenants()
+	if err != nil {
+		return nil, err
+	}
+	var names []string
+	for _, t := range tenants {
+		names = append(names, fmt.Sprintf("%s\t%s (%s)", t.Name, t.Domain, t.Status))
+	}
+	return names, nil
+}

@@ -55,10 +55,22 @@ func colorStatus(status string) string {
 func colorState(state string) string {
 	lower := strings.ToLower(state)
 	switch {
-	case lower == "up" || lower == "running" || lower == "active":
+	case lower == "up" || lower == "running" || lower == "active" || lower == "ready":
 		return green(state)
-	case lower == "down" || lower == "stopped" || lower == "error":
+	case lower == "down" || lower == "stopped" || lower == "error" || lower == "failed":
 		return red(state)
+	case lower == "provisioning":
+		return yellow(state)
 	}
 	return state
+}
+
+func colorDecision(decision string) string {
+	switch strings.ToLower(decision) {
+	case "allow":
+		return green(decision)
+	case "deny":
+		return red(decision)
+	}
+	return decision
 }

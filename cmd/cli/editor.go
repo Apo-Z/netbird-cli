@@ -30,6 +30,11 @@ var knownIDFields = map[string]string{
 	"destinations":             "group",
 	"zone_id":                  "dnszone",
 	"network_id":               "network",
+	"source_groups":            "group",
+	"target_groups":            "group",
+	"target_users":             "user",
+	"destination_provider_ids": "agentprovider",
+	"guardrail_ids":            "guardrail",
 }
 
 func annotateYAML(yamlBytes []byte, m map[string]interface{}) []byte {
@@ -222,6 +227,14 @@ func resolveName(val, resourceType string) string {
 		}
 	case "dnszone":
 		if id, err := c.ResolveDNSZoneID(val); err == nil {
+			return id
+		}
+	case "agentprovider":
+		if id, err := c.ResolveAgentProviderID(val); err == nil {
+			return id
+		}
+	case "guardrail":
+		if id, err := c.ResolveAgentGuardrailID(val); err == nil {
 			return id
 		}
 	}

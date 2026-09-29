@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"sort"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -197,10 +198,42 @@ func collectTableFields(v reflect.Value, t reflect.Type, fields *[]tableField) {
 			name == "total_pages" || name == "data" ||
 			name == "bytes_upload" || name == "bytes_download" ||
 			name == "auth_method_used" || name == "subdivision_code" ||
-			name == "metadata" || name == "geo_location" {
+			name == "metadata" || name == "geo_location" ||
+			name == "provider_id" || name == "upstream_url" ||
+			name == "models" || name == "source_groups" ||
+			name == "destination_provider_ids" || name == "guardrail_ids" ||
+			name == "target_groups" || name == "target_users" ||
+			name == "kind" || name == "default_host" ||
+			name == "catalog_id" || name == "model" || name == "label" ||
+			name == "context_window" || name == "pricing_known" ||
+			name == "input_per_1k" || name == "output_per_1k" ||
+			name == "dimension_kind" || name == "dimension_id" ||
+			name == "window_seconds" || name == "window_start_utc" ||
+			name == "tokens_input" || name == "tokens_output" ||
+			name == "cost_usd" || name == "period_start" ||
+			name == "input_tokens" || name == "output_tokens" ||
+			name == "total_tokens" || name == "decision" ||
+			name == "provider" || name == "started_at" ||
+			name == "request_count" || name == "session_id" ||
+			name == "stream_id" || name == "platform" || name == "config_keys" ||
+			name == "channel_id" || name == "target_summary" || name == "event_types" ||
+			name == "vendor" || name == "last_synced_at" || name == "api_url" ||
+			name == "cloud_id" || name == "client_id" || name == "tenant_id" ||
+			name == "sync_id" || name == "detail" || name == "sync_interval" ||
+			name == "validated" || name == "target_cluster" || name == "revoked" ||
+			name == "peer_id" || name == "ingress_ip" || name == "region" ||
+			name == "fallback" || name == "port_mappings" || name == "invoice_id" ||
+			name == "period_end" || name == "prices" || name == "free" ||
+			name == "level" || name == "message" || name == "active_users" ||
+			name == "total_users" || name == "active_peers" || name == "total_peers" {
 			label := name
-			if name == "user_id" {
+			switch name {
+			case "user_id":
 				label = "user"
+			case "destination_provider_ids":
+				label = "providers"
+			case "guardrail_ids":
+				label = "guardrails"
 			}
 			*fields = append(*fields, tableField{label: label, name: name})
 		}
@@ -213,6 +246,12 @@ func formatField(v reflect.Value, f tableField) string {
 	if !field.IsValid() {
 		return ""
 	}
+	for field.Kind() == reflect.Ptr {
+		if field.IsNil() {
+			return ""
+		}
+		field = field.Elem()
+	}
 
 	switch field.Kind() {
 	case reflect.String:
@@ -222,10 +261,19 @@ func formatField(v reflect.Value, f tableField) string {
 			if name := c.IDToName("user", s); name != "" {
 				return name
 			}
-		case "peer", "reporter_id", "target_id":
+		case "peer", "reporter_id", "target_id", "peer_id":
 			if name := c.IDToName("peer", s); name != "" {
 				return name
 			}
+		case "dimension_id":
+			if name := c.IDToName("group", s); name != "" {
+				return name
+			}
+			if name := c.IDToName("user", s); name != "" {
+				return name
+			}
+		case "decision":
+			return colorDecision(s)
 		case "status":
 			return colorStatus(s)
 		case "state":
@@ -247,12 +295,7 @@ func formatField(v reflect.Value, f tableField) string {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		return fmt.Sprintf("%d", field.Int())
 	case reflect.Float32, reflect.Float64:
-		return fmt.Sprintf("%.1f", field.Float())
-	case reflect.Ptr:
-		if field.IsNil() {
-			return ""
-		}
-		return formatField(field.Elem(), f)
+		return formatFloat(f.name, field.Float())
 	case reflect.Slice:
 		var parts []string
 		for i := 0; i < field.Len(); i++ {
@@ -262,12 +305,12 @@ func formatField(v reflect.Value, f tableField) string {
 			}
 			switch elem.Kind() {
 			case reflect.String:
-				parts = append(parts, elem.String())
+				parts = append(parts, idListName(f.name, elem.String()))
 			case reflect.Struct:
 				if nameField := elem.FieldByName("Name"); nameField.IsValid() {
 					parts = append(parts, nameField.String())
-				} else if idField := elem.FieldByName("ID"); idField.IsValid() {
-					parts = append(parts, idField.String())
+				} else if idField := elem.FieldByName("ID"); idField.IsValid() && idField.Kind() == reflect.String {
+					parts = append(parts, idListName(f.name, idField.String()))
 				}
 			}
 		}
@@ -318,8 +361,8 @@ func printKeyValue(v reflect.Value) {
 			continue
 		}
 
-		if len(name) > maxWidth {
-			maxWidth = len(name)
+		if len(name)+1 > maxWidth {
+			maxWidth = len(name) + 1
 		}
 		rows = append(rows, [2]string{name, val})
 	}
@@ -345,6 +388,8 @@ func formatFieldValue(field reflect.Value, jsonName string) string {
 			return colorStatus(s)
 		case "state":
 			return colorState(s)
+		case "decision":
+			return colorDecision(s)
 		}
 		return s
 	case reflect.Bool:
@@ -362,7 +407,7 @@ func formatFieldValue(field reflect.Value, jsonName string) string {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		return fmt.Sprintf("%d", field.Int())
 	case reflect.Float32, reflect.Float64:
-		return fmt.Sprintf("%.1f", field.Float())
+		return formatFloat(jsonName, field.Float())
 	case reflect.Slice:
 		if field.Len() == 0 {
 			return ""
@@ -375,7 +420,7 @@ func formatFieldValue(field reflect.Value, jsonName string) string {
 			}
 			switch elem.Kind() {
 			case reflect.String:
-				parts = append(parts, elem.String())
+				parts = append(parts, idListName(jsonName, elem.String()))
 			case reflect.Struct:
 				nameField := elem.FieldByName("Name")
 				idField := elem.FieldByName("ID")
@@ -383,7 +428,7 @@ func formatFieldValue(field reflect.Value, jsonName string) string {
 				if nameField.IsValid() && nameField.String() != "" {
 					parts = append(parts, nameField.String())
 				} else if idField.IsValid() {
-					entry := idField.String()
+					entry := idListName(jsonName, idField.String())
 					if typeField.IsValid() {
 						entry += " (" + typeField.String() + ")"
 					}
@@ -396,11 +441,58 @@ func formatFieldValue(field reflect.Value, jsonName string) string {
 		}
 		return strings.Join(parts, ", ")
 	case reflect.Map:
-		return "(map)"
+		if field.Len() == 0 {
+			return ""
+		}
+		var parts []string
+		iter := field.MapRange()
+		for iter.Next() {
+			parts = append(parts, fmt.Sprintf("%v=%v", iter.Key().Interface(), iter.Value().Interface()))
+		}
+		sort.Strings(parts)
+		return strings.Join(parts, ", ")
+	case reflect.Struct:
+		if data, err := json.Marshal(field.Interface()); err == nil {
+			return string(data)
+		}
+		return ""
 	default:
 		if field.CanInterface() {
 			return fmt.Sprintf("%v", field.Interface())
 		}
 		return ""
 	}
+}
+
+// idListFields maps JSON fields holding lists of IDs to the resource type used for ID → name lookup.
+var idListFields = map[string]string{
+	"source_groups":            "group",
+	"target_groups":            "group",
+	"group_ids":                "group",
+	"target_users":             "user",
+	"destination_provider_ids": "agentprovider",
+	"guardrail_ids":            "guardrail",
+	"groups":                   "group",
+}
+
+func idListName(jsonName, id string) string {
+	if resource, ok := idListFields[jsonName]; ok {
+		if name := c.IDToName(resource, id); name != "" {
+			return name
+		}
+	}
+	return id
+}
+
+func formatFloat(jsonName string, v float64) string {
+	switch {
+	case strings.HasSuffix(jsonName, "_usd"):
+		if v != 0 && v < 0.01 && v > -0.01 {
+			return fmt.Sprintf("$%.5f", v)
+		}
+		return fmt.Sprintf("$%.2f", v)
+	case strings.HasSuffix(jsonName, "_per_1k"):
+		return fmt.Sprintf("$%g", v)
+	}
+	return fmt.Sprintf("%.1f", v)
 }
