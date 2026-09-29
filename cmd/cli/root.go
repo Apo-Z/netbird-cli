@@ -57,10 +57,15 @@ func init() {
 
 func exitErr(msg string, err error) {
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error %s: %s\n", msg, err)
+		fmt.Fprintf(os.Stderr, "error %s: %s%s\n", msg, err, cloudHint(err))
 	} else {
 		fmt.Fprintf(os.Stderr, "error: %s\n", msg)
 	}
+}
+
+// printErr prints an API error to stderr, with a hint when a self-hosted server lacks the endpoint.
+func printErr(err error) {
+	fmt.Fprintf(os.Stderr, "error: %s%s\n", err, cloudHint(err))
 }
 
 func dryRunCheck(payload interface{}) bool {

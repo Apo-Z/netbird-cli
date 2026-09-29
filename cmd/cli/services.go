@@ -18,7 +18,7 @@ var servicesGetCmd = &cobra.Command{
 		if len(args) == 0 {
 			services, err := c.GetServices()
 			if err != nil {
-				fmt.Printf("error: %s\n", err)
+				printErr(err)
 				return
 			}
 			printOutput(services)
@@ -26,7 +26,7 @@ var servicesGetCmd = &cobra.Command{
 		}
 		service, err := c.GetServiceByID(args[0])
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		printOutput(service)
@@ -74,7 +74,7 @@ var serviceCreateCmd = &cobra.Command{
 		}
 		service, err := c.CreateService(req)
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		fmt.Println("service created:")
@@ -130,7 +130,7 @@ var serviceDeleteCmd = &cobra.Command{
 			return
 		}
 		if err := c.DeleteService(args[0]); err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		fmt.Println("service deleted")
@@ -144,7 +144,7 @@ var proxyclustersGetCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		clusters, err := c.GetProxyClusters()
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		printOutput(clusters)

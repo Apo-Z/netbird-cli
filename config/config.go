@@ -11,6 +11,7 @@ const (
 	EnvURL        = "NETBIRD_CLI_URL"
 	EnvToken      = "NETBIRD_CLI_TOKEN"
 	EnvConfigFile = "NETBIRD_CLI_CONFIG_FILE"
+	EnvEdition    = "NETBIRD_CLI_EDITION"
 )
 
 var ConfigFile string = fmt.Sprintf("%s/%s", os.Getenv("HOME"), ".config/netbird-cli/config.yaml")
@@ -22,6 +23,8 @@ type Auth struct {
 
 type Config struct {
 	Auth Auth `json:"auth"`
+	// Edition is "cloud", "selfhosted" or "" / "auto" (detected from the URL).
+	Edition string `json:"edition" yaml:"edition"`
 }
 
 func InitConfig() (*Config, error) {
@@ -56,6 +59,10 @@ func InitConfig() (*Config, error) {
 	token := os.Getenv(EnvToken)
 	if token != "" {
 		config.Auth.Token = token
+	}
+
+	if edition := os.Getenv(EnvEdition); edition != "" {
+		config.Edition = edition
 	}
 
 	return config, nil

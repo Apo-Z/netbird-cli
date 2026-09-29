@@ -18,7 +18,7 @@ var usersGetCmd = &cobra.Command{
 		if len(args) == 0 {
 			users, err := c.GetUsers()
 			if err != nil {
-				fmt.Printf("error: %s\n", err)
+				printErr(err)
 				return
 			}
 			printOutput(users)
@@ -26,7 +26,7 @@ var usersGetCmd = &cobra.Command{
 		}
 		user, err := c.GetUser(args[0])
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		printOutput(user)
@@ -103,7 +103,7 @@ var userCreateCmd = &cobra.Command{
 			}
 			invite, err := c.CreateUserInvite(req)
 			if err != nil {
-				fmt.Printf("error: %s\n", err)
+				printErr(err)
 				return
 			}
 			printOutput(invite)
@@ -121,7 +121,7 @@ var userCreateCmd = &cobra.Command{
 		}
 		user, err := c.CreateUser(req)
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		fmt.Println("user created:")
@@ -176,14 +176,14 @@ var userDeleteCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		id, err := c.ResolveUserID(args[0])
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		if dryRunMsg(fmt.Sprintf("would delete user %s", args[0])) {
 			return
 		}
 		if err := c.DeleteUser(id); err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		fmt.Println("user deleted")
@@ -202,7 +202,7 @@ var approveCmd = &cobra.Command{
 		}
 		id, err := c.ResolveUserID(args[1])
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		if dryRunMsg(fmt.Sprintf("would approve user %s", args[1])) {
@@ -210,7 +210,7 @@ var approveCmd = &cobra.Command{
 		}
 		user, err := c.ApproveUser(id)
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		printOutput(user)
@@ -229,7 +229,7 @@ var blockCmd = &cobra.Command{
 		}
 		id, err := c.ResolveUserID(args[1])
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		blocked := true
@@ -239,7 +239,7 @@ var blockCmd = &cobra.Command{
 		req := &client.UpdateUserRequest{IsBlocked: &blocked}
 		user, err := c.UpdateUser(id, req)
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		printOutput(user)
@@ -258,7 +258,7 @@ var unblockCmd = &cobra.Command{
 		}
 		id, err := c.ResolveUserID(args[1])
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		blocked := false
@@ -268,7 +268,7 @@ var unblockCmd = &cobra.Command{
 		req := &client.UpdateUserRequest{IsBlocked: &blocked}
 		user, err := c.UpdateUser(id, req)
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		printOutput(user)
@@ -296,7 +296,7 @@ var inviteCreateCmd = &cobra.Command{
 		}
 		invite, err := c.CreateUserInvite(req)
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		printOutput(invite)
@@ -311,14 +311,14 @@ var inviteDeleteCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		invite, err := c.GetInvite(args[0])
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		if dryRunMsg(fmt.Sprintf("would delete invitation %s", args[0])) {
 			return
 		}
 		if err := c.DeleteUserInvite(invite.ID); err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		fmt.Println("invitation deleted")
@@ -331,7 +331,7 @@ var inviteListCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		invites, err := c.GetUserInvites()
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		printOutput(invites)
@@ -347,7 +347,7 @@ var inviteRegenerateCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		invite, err := c.GetInvite(args[0])
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		req := &client.RegenerateInviteRequest{ExpiresIn: inviteExpireFlag}
@@ -356,7 +356,7 @@ var inviteRegenerateCmd = &cobra.Command{
 		}
 		regenerated, err := c.RegenerateUserInvite(invite.ID, req)
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		printOutput(regenerated)
@@ -369,7 +369,7 @@ var whoamiCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		user, err := c.GetCurrentUser()
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		printOutput(user)
@@ -385,7 +385,7 @@ var invitesGetCmd = &cobra.Command{
 		if len(args) == 0 {
 			invites, err := c.GetUserInvites()
 			if err != nil {
-				fmt.Printf("error: %s\n", err)
+				printErr(err)
 				return
 			}
 			printOutput(invites)
@@ -393,7 +393,7 @@ var invitesGetCmd = &cobra.Command{
 		}
 		invite, err := c.GetInvite(args[0])
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		printOutput(invite)
@@ -409,14 +409,14 @@ var invitesDeleteCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		invite, err := c.GetInvite(args[0])
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		if dryRunMsg(fmt.Sprintf("would delete invitation %s", args[0])) {
 			return
 		}
 		if err := c.DeleteUserInvite(invite.ID); err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		fmt.Println("invitation deleted")

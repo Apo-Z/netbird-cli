@@ -18,7 +18,7 @@ var posturechecksGetCmd = &cobra.Command{
 		if len(args) == 0 {
 			checks, err := c.GetPostureChecks()
 			if err != nil {
-				fmt.Printf("error: %s\n", err)
+				printErr(err)
 				return
 			}
 			printOutput(checks)
@@ -26,7 +26,7 @@ var posturechecksGetCmd = &cobra.Command{
 		}
 		check, err := c.GetPostureCheckByID(args[0])
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		printOutput(check)
@@ -73,7 +73,7 @@ var posturecheckCreateCmd = &cobra.Command{
 		}
 		check, err := c.CreatePostureCheck(req)
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		fmt.Println("posture check created:")
@@ -123,7 +123,7 @@ var posturecheckDeleteCmd = &cobra.Command{
 			return
 		}
 		if err := c.DeletePostureCheck(args[0]); err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		fmt.Println("posture check deleted")

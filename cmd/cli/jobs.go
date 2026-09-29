@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 )
 
@@ -15,12 +13,12 @@ var jobsGetCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		id, err := c.ResolvePeerID(args[0])
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		jobs, err := c.GetPeerJobs(id)
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		printOutput(jobs)
@@ -34,12 +32,12 @@ var jobGetCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		id, err := c.ResolvePeerID(args[0])
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		job, err := c.GetPeerJob(id, args[1])
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		printOutput(job)

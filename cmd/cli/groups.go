@@ -18,7 +18,7 @@ var groupsGetCmd = &cobra.Command{
 		if len(args) == 0 {
 			groups, err := c.GetGroups()
 			if err != nil {
-				fmt.Printf("error: %s\n", err)
+				printErr(err)
 				return
 			}
 			printOutput(groups)
@@ -26,12 +26,12 @@ var groupsGetCmd = &cobra.Command{
 		}
 		id, err := c.ResolveGroupID(args[0])
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		group, err := c.GetGroupByID(id)
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		printOutput(group)
@@ -78,7 +78,7 @@ var groupCreateCmd = &cobra.Command{
 		}
 		group, err := c.CreateGroup(req)
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		fmt.Println("group created:")
@@ -131,14 +131,14 @@ var groupDeleteCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		id, err := c.ResolveGroupID(args[0])
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		if dryRunMsg(fmt.Sprintf("would delete group %s", args[0])) {
 			return
 		}
 		if err := c.DeleteGroup(id); err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		fmt.Println("group deleted")

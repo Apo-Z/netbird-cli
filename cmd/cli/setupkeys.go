@@ -18,7 +18,7 @@ var setupkeysGetCmd = &cobra.Command{
 		if len(args) == 0 {
 			keys, err := c.GetSetupKeys()
 			if err != nil {
-				fmt.Printf("error: %s\n", err)
+				printErr(err)
 				return
 			}
 			printOutput(keys)
@@ -26,7 +26,7 @@ var setupkeysGetCmd = &cobra.Command{
 		}
 		key, err := c.GetSetupKeyByID(args[0])
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		printOutput(key)
@@ -77,7 +77,7 @@ var setupkeyCreateCmd = &cobra.Command{
 		}
 		key, err := c.CreateSetupKey(req)
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		fmt.Println("key created:")
@@ -127,7 +127,7 @@ var setupkeyDeleteCmd = &cobra.Command{
 			return
 		}
 		if err := c.DeleteSetupKey(args[0]); err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		fmt.Println("key deleted")

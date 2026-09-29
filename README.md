@@ -62,7 +62,23 @@ auth:
   token: <your-api-token>
 ```
 
-Environment variables (override the file): `NETBIRD_CLI_URL`, `NETBIRD_CLI_TOKEN`, `NETBIRD_CLI_CONFIG_FILE`.
+Environment variables (override the file): `NETBIRD_CLI_URL`, `NETBIRD_CLI_TOKEN`, `NETBIRD_CLI_CONFIG_FILE`, `NETBIRD_CLI_EDITION`.
+
+### NetBird Cloud vs self-hosted
+
+Some features only exist on one edition. The CLI detects it from the URL (`*.netbird.io` is NetBird Cloud, anything else is self-hosted) and adapts: commands the edition does not support are hidden from help and completion, and running one explains why instead of returning a raw 404.
+
+| Only on NetBird Cloud | Only on self-hosted |
+|---|---|
+| event streaming, notification channels, EDR + peer bypass, IdP sync (Google, Azure, Okta SCIM, SCIM), ingress peers/ports, MSP tenants, billing, network traffic events, managed Agent Network gateway | `setup`, `instancestatus`, user invites (embedded IdP) |
+
+Force the edition if the detection is wrong (e.g. a custom domain in front of NetBird Cloud):
+
+```yaml
+edition: cloud        # cloud | selfhosted | auto (default)
+```
+
+`netbird info` shows the URL, the edition (and how it was decided), the management version, and the commands hidden for this edition. On self-hosted servers, a 404 on an optional feature (reverse proxy, Agent Network, embedded IdP) comes with a hint that it may not be deployed or need a newer version.
 
 The URL is automatically cleaned — trailing `/` and `/api` are stripped.
 
@@ -265,7 +281,7 @@ Everything is also declarative: `netbird generate agentnetwork > ai.yaml`, then 
 
 ## Limitations
 
-- `netbird events traffic` and `netbird events proxylogs` are **cloud-only** — they will return 404 on self-hosted instances.
+- Cloud-only and self-hosted-only features are hidden on the other edition (see [NetBird Cloud vs self-hosted](#netbird-cloud-vs-self-hosted)).
 - Edits use HTTP `PUT` (full object replacement), not `PATCH`. Always send the complete object body.
 - `GET /api/users/{id}` does not exist in the Netbird API — user lookup is done by listing all users.
 - No CI / tests yet.

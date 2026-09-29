@@ -18,7 +18,7 @@ var idpsGetCmd = &cobra.Command{
 		if len(args) == 0 {
 			idps, err := c.GetIdentityProviders()
 			if err != nil {
-				fmt.Printf("error: %s\n", err)
+				printErr(err)
 				return
 			}
 			printOutput(idps)
@@ -26,7 +26,7 @@ var idpsGetCmd = &cobra.Command{
 		}
 		idp, err := c.GetIdentityProviderByID(args[0])
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		printOutput(idp)
@@ -69,7 +69,7 @@ var idpCreateCmd = &cobra.Command{
 		}
 		idp, err := c.CreateIdentityProvider(req)
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		fmt.Println("identity provider created:")
@@ -125,7 +125,7 @@ var idpDeleteCmd = &cobra.Command{
 			return
 		}
 		if err := c.DeleteIdentityProvider(args[0]); err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		fmt.Println("identity provider deleted")

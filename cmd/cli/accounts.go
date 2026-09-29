@@ -18,7 +18,7 @@ var accountsGetCmd = &cobra.Command{
 		if len(args) == 0 {
 			accounts, err := c.GetAccounts()
 			if err != nil {
-				fmt.Printf("error: %s\n", err)
+				printErr(err)
 				return
 			}
 			printOutput(accounts)
@@ -27,7 +27,7 @@ var accountsGetCmd = &cobra.Command{
 		// There's no GET /api/accounts/{id} — list and filter
 		accounts, err := c.GetAccounts()
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		for _, a := range accounts {
@@ -110,12 +110,12 @@ var tokensGetCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		userID, err := c.ResolveUserID(args[0])
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		tokens, err := c.GetTokens(userID)
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		printOutput(tokens)
@@ -170,12 +170,12 @@ var tokenCreateCmd = &cobra.Command{
 		}
 		userID, err := c.ResolveUserID(userFlag)
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		result, err := c.CreateToken(userID, req)
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		fmt.Println("token created (save the plain_token value):")
@@ -192,14 +192,14 @@ var tokenDeleteCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		userID, err := c.ResolveUserID(args[0])
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		if dryRunMsg(fmt.Sprintf("would delete token %s", args[1])) {
 			return
 		}
 		if err := c.DeleteToken(userID, args[1]); err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		fmt.Println("token deleted")

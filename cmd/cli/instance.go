@@ -14,7 +14,7 @@ var instanceStatusCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		status, err := c.GetInstanceStatus()
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		printOutput(status)
@@ -27,7 +27,7 @@ var instanceVersionCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		version, err := c.GetInstanceVersion()
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		printOutput(version)

@@ -18,7 +18,7 @@ var routesGetCmd = &cobra.Command{
 		if len(args) == 0 {
 			routes, err := c.GetRoutes()
 			if err != nil {
-				fmt.Printf("error: %s\n", err)
+				printErr(err)
 				return
 			}
 			printOutput(routes)
@@ -26,7 +26,7 @@ var routesGetCmd = &cobra.Command{
 		}
 		route, err := c.GetRouteByID(args[0])
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		printOutput(route)
@@ -91,7 +91,7 @@ var routeCreateCmd = &cobra.Command{
 		}
 		route, err := c.CreateRoute(req)
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		fmt.Println("route created:")
@@ -171,7 +171,7 @@ var routeDeleteCmd = &cobra.Command{
 			return
 		}
 		if err := c.DeleteRoute(args[0]); err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		fmt.Println("route deleted")

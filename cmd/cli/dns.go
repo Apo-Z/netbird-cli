@@ -18,7 +18,7 @@ var nameserversGetCmd = &cobra.Command{
 		if len(args) == 0 {
 			groups, err := c.GetNameserverGroups()
 			if err != nil {
-				fmt.Printf("error: %s\n", err)
+				printErr(err)
 				return
 			}
 			printOutput(groups)
@@ -26,7 +26,7 @@ var nameserversGetCmd = &cobra.Command{
 		}
 		group, err := c.GetNameserverGroupByID(args[0])
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		printOutput(group)
@@ -89,7 +89,7 @@ var nameserverCreateCmd = &cobra.Command{
 		}
 		group, err := c.CreateNameserverGroup(req)
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		fmt.Println("nameserver group created:")
@@ -161,7 +161,7 @@ var nameserverDeleteCmd = &cobra.Command{
 			return
 		}
 		if err := c.DeleteNameserverGroup(args[0]); err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		fmt.Println("nameserver group deleted")
@@ -175,7 +175,7 @@ var dnssettingsGetCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		settings, err := c.GetDNSSettings()
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		printOutput(settings)

@@ -61,7 +61,7 @@ var networksGetCmd = &cobra.Command{
 		if len(args) == 0 {
 			networks, err := c.GetNetworks()
 			if err != nil {
-				fmt.Printf("error: %s\n", err)
+				printErr(err)
 				return
 			}
 			printOutput(networks)
@@ -69,12 +69,12 @@ var networksGetCmd = &cobra.Command{
 		}
 		id, err := c.ResolveNetworkID(args[0])
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		network, err := c.GetNetworkByID(id)
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		printOutput(network)
@@ -111,7 +111,7 @@ var networkCreateCmd = &cobra.Command{
 		}
 		network, err := c.CreateNetwork(req)
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		fmt.Println("network created:")
@@ -164,14 +164,14 @@ var networkDeleteCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		id, err := c.ResolveNetworkID(args[0])
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		if dryRunMsg(fmt.Sprintf("would delete network %s", args[0])) {
 			return
 		}
 		if err := c.DeleteNetwork(id); err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		fmt.Println("network deleted")
@@ -188,12 +188,12 @@ var networkresourcesGetCmd = &cobra.Command{
 		if len(args) == 1 {
 			id, err := c.ResolveNetworkID(args[0])
 			if err != nil {
-				fmt.Printf("error: %s\n", err)
+				printErr(err)
 				return
 			}
 			resources, err := c.GetNetworkResources(id)
 			if err != nil {
-				fmt.Printf("error: %s\n", err)
+				printErr(err)
 				return
 			}
 			printOutput(resources)
@@ -201,7 +201,7 @@ var networkresourcesGetCmd = &cobra.Command{
 		}
 		networks, err := c.GetNetworks()
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		type resourceWithNetwork struct {
@@ -273,7 +273,7 @@ var networkresourceCreateCmd = &cobra.Command{
 		}
 		id, err := c.ResolveNetworkID(networkFlag)
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		req := &client.CreateNetworkResourceRequest{
@@ -288,7 +288,7 @@ var networkresourceCreateCmd = &cobra.Command{
 		}
 		resource, err := c.CreateNetworkResource(id, req)
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		fmt.Println("resource created:")
@@ -355,19 +355,19 @@ var networkresourceDeleteCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		netID, err := c.ResolveNetworkID(args[0])
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		resID, err := resolveNetworkResourceID(netID, args[1])
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		if dryRunMsg("network resource deletion in dry-run") {
 			return
 		}
 		if err := c.DeleteNetworkResource(netID, resID); err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		fmt.Println("resource deleted")

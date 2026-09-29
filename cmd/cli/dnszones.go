@@ -61,7 +61,7 @@ var dnszonesGetCmd = &cobra.Command{
 		if len(args) == 0 {
 			zones, err := c.GetDNSZones()
 			if err != nil {
-				fmt.Printf("error: %s\n", err)
+				printErr(err)
 				return
 			}
 			printOutput(zones)
@@ -69,12 +69,12 @@ var dnszonesGetCmd = &cobra.Command{
 		}
 		id, err := c.ResolveDNSZoneID(args[0])
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		zone, err := c.GetDNSZoneByID(id)
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		printOutput(zone)
@@ -117,7 +117,7 @@ var dnszoneCreateCmd = &cobra.Command{
 		}
 		zone, err := c.CreateDNSZone(req)
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		fmt.Println("DNS zone created:")
@@ -179,14 +179,14 @@ var dnszoneDeleteCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		id, err := c.ResolveDNSZoneID(args[0])
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		if dryRunMsg(fmt.Sprintf("would delete DNS zone %s", args[0])) {
 			return
 		}
 		if err := c.DeleteDNSZone(id); err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		fmt.Println("DNS zone deleted")
@@ -202,12 +202,12 @@ var dnsrecordsGetCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		id, err := c.ResolveDNSZoneID(args[0])
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		recs, err := c.GetDNSRecords(id)
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		printOutput(recs)
@@ -253,7 +253,7 @@ var dnsrecordCreateCmd = &cobra.Command{
 		}
 		zoneID, err := c.ResolveDNSZoneID(zoneFlag)
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		req := &client.CreateDNSRecordRequest{
@@ -267,7 +267,7 @@ var dnsrecordCreateCmd = &cobra.Command{
 		}
 		rec, err := c.CreateDNSRecord(zoneID, req)
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		fmt.Println("record created:")
@@ -331,19 +331,19 @@ var dnsrecordDeleteCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		zoneID, err := c.ResolveDNSZoneID(args[0])
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		recID, err := resolveDNSRecordID(zoneID, args[1])
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		if dryRunMsg("DNS record deletion in dry-run") {
 			return
 		}
 		if err := c.DeleteDNSRecord(zoneID, recID); err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		fmt.Println("record deleted")

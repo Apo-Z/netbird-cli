@@ -18,7 +18,7 @@ var policiesGetCmd = &cobra.Command{
 		if len(args) == 0 {
 			policies, err := c.GetPolicies()
 			if err != nil {
-				fmt.Printf("error: %s\n", err)
+				printErr(err)
 				return
 			}
 			printOutput(policies)
@@ -26,12 +26,12 @@ var policiesGetCmd = &cobra.Command{
 		}
 		id, err := c.ResolvePolicyID(args[0])
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		policy, err := c.GetPolicyByID(id)
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		printOutput(policy)
@@ -82,7 +82,7 @@ var policyCreateCmd = &cobra.Command{
 		}
 		policy, err := c.CreatePolicy(req)
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		fmt.Println("policy created:")
@@ -138,14 +138,14 @@ var policyDeleteCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		id, err := c.ResolvePolicyID(args[0])
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		if dryRunMsg(fmt.Sprintf("would delete policy %s", args[0])) {
 			return
 		}
 		if err := c.DeletePolicy(id); err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		fmt.Println("policy deleted")

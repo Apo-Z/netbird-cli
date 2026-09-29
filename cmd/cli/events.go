@@ -19,7 +19,7 @@ var auditCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		events, err := c.GetAuditEvents()
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		if pageSizeFlag > 0 && len(events) > pageSizeFlag {
@@ -50,7 +50,7 @@ var trafficCmd = &cobra.Command{
 				fmt.Println("Network traffic events are only available on Netbird Cloud, not on self-hosted instances.")
 				return
 			}
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		printOutput(events)
@@ -59,7 +59,7 @@ var trafficCmd = &cobra.Command{
 
 var proxylogsGetCmd = &cobra.Command{
 	Use:   "proxylogs",
-	Short: "Reverse proxy access logs (cloud-only)",
+	Short: "Reverse proxy access logs",
 	Run: func(cmd *cobra.Command, args []string) {
 		params := map[string]string{}
 		if pageFlag > 0 {
@@ -70,11 +70,7 @@ var proxylogsGetCmd = &cobra.Command{
 		}
 		logs, err := c.GetProxyAccessLogs(params)
 		if err != nil {
-			if strings.Contains(err.Error(), "404") {
-				fmt.Println("Proxy access logs are only available on Netbird Cloud, not on self-hosted instances.")
-				return
-			}
-			fmt.Printf("error: %s\n", err)
+			exitErr("proxy logs", err)
 			return
 		}
 		printOutput(logs)

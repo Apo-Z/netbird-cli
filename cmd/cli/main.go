@@ -45,6 +45,13 @@ func main() {
 		os.Exit(1)
 	}
 
+	edition, editionSource, err = resolveEdition(cfg.Edition, c.URL)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "config: %s\n", err)
+		os.Exit(1)
+	}
+	applyEdition(rootCmd)
+
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}

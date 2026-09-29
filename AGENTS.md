@@ -14,7 +14,7 @@ There are no tests. CI (`.github/workflows/release.yml`) only builds and publish
 ## Config
 
 YAML config at `~/.config/netbird-cli/config.yaml`, overridable via `NETBIRD_CLI_CONFIG_FILE`.
-API URL and token can be overridden with `NETBIRD_CLI_URL` and `NETBIRD_CLI_TOKEN` env vars. See `config/config.go:10-14`.
+API URL, token and edition can be overridden with `NETBIRD_CLI_URL`, `NETBIRD_CLI_TOKEN` and `NETBIRD_CLI_EDITION` env vars. See `config/config.go:10-14`.
 The URL is stripped of trailing `/api` and `/` automatically.
 
 ## Structure
@@ -55,7 +55,7 @@ netbird apply -f <file.yaml>         # declarative config
 netbird generate <resource|all>      # YAML template
 ```
 
-Special verbs: `approve`, `block`, `unblock`, `invite`, `whoami`, `setup`, `events`, `bypass`, `unbypass`, `sync`, `validate`, `regenerate`, `msp`, `billing`.
+Special verbs: `info`, `approve`, `block`, `unblock`, `invite`, `whoami`, `setup`, `events`, `bypass`, `unbypass`, `sync`, `validate`, `regenerate`, `msp`, `billing`.
 
 When adding a new resource, register it under the appropriate verb (`getCmd.AddCommand`, `createCmd.AddCommand`, etc.) in the resource's `init()`.
 
@@ -133,7 +133,8 @@ The URL is passed in at construction (`NewNetbirdClient(url, token)`). All API p
 - `GET /api/users/{id}` does NOT exist in the Netbird API — user lookup is done via listing all users
 - `GET /api/accounts/{id}` does NOT exist either — account data is fetched via listing
 - `create --edit` uses `createCmd.PersistentFlags()` for the `--edit` flag, so it's inherited by all create subcommands
-- `events traffic` and `events proxylogs` are cloud-only (`x-cloud-only: true`), will 404 on self-hosted instances
+- edition support lives in `cmd/cli/edition.go`: `requireEdition(editionCloud|editionSelfHosted, cmds...)` tags commands; the other edition hides them (`applyEdition`, run from `main.go`) and refuses them (`checkEdition`, root `PersistentPreRun`). Edition = config `edition` / `NETBIRD_CLI_EDITION`, else detected from the URL (`*.netbird.io` = cloud). Tag every new command whose endpoints are `x-cloud-only` in the OpenAPI spec (operation or tag level)
+- print API errors with `printErr(err)` or `exitErr(msg, err)` (stderr, adds a hint on self-hosted 404s), not `fmt.Printf`
 - the table field whitelist in `format.go:getTableFields` must be updated when adding new resource types with new JSON fields, otherwise only `id` will appear in table output
 - describe commands now respect `-o json|yaml`; in default mode, rich human-readable output is used
 - the Agent Network OpenAPI spec lives upstream at `shared/management/http/api/openapi.yml` in netbirdio/netbird (tag `Agent Network`); ID-list fields (`source_groups`, `destination_provider_ids`, `guardrail_ids`, `target_groups`, `target_users`) are registered in `editor.go:knownIDFields` and `format.go:idListFields` so they are annotated/resolved by name

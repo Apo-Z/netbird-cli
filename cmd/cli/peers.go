@@ -15,7 +15,7 @@ var peersGetCmd = &cobra.Command{
 		if len(args) == 0 {
 			peers, err := c.GetPeers(nameFlag, ipFlag)
 			if err != nil {
-				fmt.Printf("error: %s\n", err)
+				printErr(err)
 				return
 			}
 			printOutput(peers)
@@ -23,12 +23,12 @@ var peersGetCmd = &cobra.Command{
 		}
 		id, err := c.ResolvePeerID(args[0])
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		peer, err := c.GetPeerByID(id)
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		printOutput(peer)
@@ -89,14 +89,14 @@ var peerDeleteCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		id, err := c.ResolvePeerID(args[0])
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		if dryRunMsg(fmt.Sprintf("would delete peer %s", args[0])) {
 			return
 		}
 		if err := c.DeletePeer(id); err != nil {
-			fmt.Printf("error: %s\n", err)
+			printErr(err)
 			return
 		}
 		fmt.Println("peer deleted")
