@@ -1376,6 +1376,8 @@ func addAgentFilterFlags(cmd *cobra.Command) {
 	cmd.RegisterFlagCompletionFunc("user", validArgsFunc(userNames))
 	cmd.RegisterFlagCompletionFunc("group", validArgsFunc(groupNames))
 	cmd.RegisterFlagCompletionFunc("provider", validArgsFunc(agentProviderNames))
+	cmd.RegisterFlagCompletionFunc("model", validArgsFunc(agentModelNames))
+	cmd.RegisterFlagCompletionFunc("session", validArgsFunc(agentSessionIDs))
 }
 
 func init() {
@@ -1401,6 +1403,7 @@ func init() {
 	agentProviderCreateCmd.Flags().StringVar(&providerTypeFlag, "type", "", "Catalog provider id (see: netbird get agentcatalog)")
 	agentProviderCreateCmd.Flags().StringSliceVar(&modelsFlag, "models", nil, "Restrict to these catalog models (default: all)")
 	agentProviderCreateCmd.RegisterFlagCompletionFunc("type", validArgsFunc(agentCatalogIDs))
+	agentProviderCreateCmd.RegisterFlagCompletionFunc("models", catalogModelCompletion)
 
 	// policies
 	for _, cmd := range []*cobra.Command{agentPolicyCreateCmd, agentPolicyEditCmd} {
@@ -1422,6 +1425,7 @@ func init() {
 		cmd.Flags().StringVar(&descFlag, "desc", "", "Description")
 	}
 	guardrailCreateCmd.Flags().StringSliceVar(&modelsFlag, "models", nil, "Model allowlist (enables the allowlist check)")
+	guardrailCreateCmd.RegisterFlagCompletionFunc("models", validArgsFunc(agentModelNames))
 	guardrailCreateCmd.Flags().BoolVar(&promptCaptureFlag, "prompt-capture", false, "Capture prompts/completions (also needs agentsettings --prompt-collection)")
 	guardrailCreateCmd.Flags().BoolVar(&redactPIIFlag, "redact-pii", false, "Redact PII from captured prompts")
 

@@ -154,18 +154,20 @@ var mspInviteCmd = &cobra.Command{
 }
 
 var mspAcceptCmd = &cobra.Command{
-	Use:   "accept <tenant-id>",
-	Short: "Accept an MSP invitation (run as the invited account owner)",
-	Args:  cobra.ExactArgs(1),
+	Use:               "accept <tenant-id>",
+	ValidArgsFunction: noCompletion,
+	Short:             "Accept an MSP invitation (run as the invited account owner)",
+	Args:              cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		tenantActionByID(args[0], "PUT", "invite", map[string]string{"value": "accept"}, "invitation accepted")
 	},
 }
 
 var mspDeclineCmd = &cobra.Command{
-	Use:   "decline <tenant-id>",
-	Short: "Decline an MSP invitation (run as the invited account owner)",
-	Args:  cobra.ExactArgs(1),
+	Use:               "decline <tenant-id>",
+	ValidArgsFunction: noCompletion,
+	Short:             "Decline an MSP invitation (run as the invited account owner)",
+	Args:              cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		tenantActionByID(args[0], "PUT", "invite", map[string]string{"value": "decline"}, "invitation declined")
 	},
@@ -353,9 +355,10 @@ var billingInvoicesCmd = &cobra.Command{
 }
 
 var billingInvoiceCmd = &cobra.Command{
-	Use:   "invoice <id>",
-	Short: "Get an invoice: PDF link (default) or CSV (--csv, written to stdout or --file)",
-	Args:  cobra.ExactArgs(1),
+	Use:               "invoice <id>",
+	ValidArgsFunction: validArgsFunc(invoiceIDs),
+	Short:             "Get an invoice: PDF link (default) or CSV (--csv, written to stdout or --file)",
+	Args:              cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		if csvFlag {
 			data, err := c.GetBillingInvoiceCSV(args[0])
@@ -477,6 +480,7 @@ func init() {
 	for _, cmd := range []*cobra.Command{tenantCreateCmd, tenantEditCmd} {
 		cmd.Flags().StringVar(&nameFlag, "name", "", "Tenant name")
 		cmd.Flags().StringSliceVar(&tenantGroupsFlag, "groups", nil, "Managing MSP groups as <group>:<role>")
+		cmd.RegisterFlagCompletionFunc("groups", tenantGroupCompletion)
 	}
 	tenantCreateCmd.Flags().StringVar(&domainFlag, "domain", "", "Tenant domain (verified by DNS TXT challenge)")
 	mspUnlinkCmd.Flags().StringVar(&ownerFlag, "owner", "", "User ID of the tenant's new owner")
@@ -492,4 +496,12 @@ func init() {
 	billingCheckoutCmd.Flags().BoolVar(&trialFlag, "trial", false, "Start with a 14-day trial")
 	billingAWSActivateCmd.Flags().StringVar(&planFlag, "plan", "", "Plan tier, e.g. business")
 	billingAWSEnrichCmd.Flags().StringVar(&awsUserIDFlag, "aws-user-id", "", "AWS user ID")
+
+	mspUnlinkCmd.RegisterFlagCompletionFunc("owner", validArgsFunc(userIDs))
+	for _, cmd := range []*cobra.Command{mspSubscribeCmd, billingSubscriptionCmd, billingCheckoutCmd} {
+		cmd.RegisterFlagCompletionFunc("price", validArgsFunc(priceIDs))
+	}
+	for _, cmd := range []*cobra.Command{billingSubscriptionCmd, billingAWSActivateCmd} {
+		cmd.RegisterFlagCompletionFunc("plan", validArgsFunc(planTiers))
+	}
 }

@@ -162,9 +162,10 @@ type notificationChannelRow struct {
 }
 
 var notificationChannelsGetCmd = &cobra.Command{
-	Use:     "notificationchannels [id]",
-	Aliases: []string{"notificationchannel", "nc"},
-	Short:   "List or display notification channels (email, webhook)",
+	Use:               "notificationchannels [id]",
+	Aliases:           []string{"notificationchannel", "nc"},
+	Short:             "List or display notification channels (email, webhook)",
+	ValidArgsFunction: validArgsFunc(notificationChannelIDs),
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 1 {
 			ch, err := c.GetNotificationChannel(args[0])
@@ -260,11 +261,12 @@ var notificationChannelCreateCmd = &cobra.Command{
 }
 
 var notificationChannelEditCmd = &cobra.Command{
-	Use:     "notificationchannel <id>",
-	Aliases: []string{"nc"},
-	Short:   "Edit a notification channel",
-	Long:    "Edit a notification channel. Webhook header values are write-only (masked on read): they are left out of the editor; pass --header to set them again.",
-	Args:    cobra.ExactArgs(1),
+	Use:               "notificationchannel <id>",
+	Aliases:           []string{"nc"},
+	Short:             "Edit a notification channel",
+	ValidArgsFunction: validArgsFunc(notificationChannelIDs),
+	Long:              "Edit a notification channel. Webhook header values are write-only (masked on read): they are left out of the editor; pass --header to set them again.",
+	Args:              cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		overrides := map[string]interface{}{}
 		if cmd.Flags().Changed("enabled") {
@@ -298,10 +300,11 @@ var notificationChannelEditCmd = &cobra.Command{
 }
 
 var notificationChannelDeleteCmd = &cobra.Command{
-	Use:     "notificationchannel <id>",
-	Aliases: []string{"nc"},
-	Short:   "Delete a notification channel",
-	Args:    cobra.ExactArgs(1),
+	Use:               "notificationchannel <id>",
+	Aliases:           []string{"nc"},
+	Short:             "Delete a notification channel",
+	ValidArgsFunction: validArgsFunc(notificationChannelIDs),
+	Args:              cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		if dryRunMsg(fmt.Sprintf("would delete notification channel %s", args[0])) {
 			return
@@ -581,16 +584,11 @@ type idpSyncRow struct {
 }
 
 var idpSyncsGetCmd = &cobra.Command{
-	Use:     "idpsyncs [kind] [id]",
-	Aliases: []string{"idpsync", "ids"},
-	Short:   "List IdP user/group sync integrations (google, azure, okta, scim)",
-	Args:    cobra.MaximumNArgs(2),
-	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		if len(args) == 0 {
-			return idpSyncKinds, cobra.ShellCompDirectiveNoFileComp
-		}
-		return nil, cobra.ShellCompDirectiveNoFileComp
-	},
+	Use:               "idpsyncs [kind] [id]",
+	Aliases:           []string{"idpsync", "ids"},
+	Short:             "List IdP user/group sync integrations (google, azure, okta, scim)",
+	Args:              cobra.MaximumNArgs(2),
+	ValidArgsFunction: idpSyncArgs(idpSyncKinds, 0),
 	Run: func(cmd *cobra.Command, args []string) {
 		kinds := idpSyncKinds
 		if len(args) > 0 {
@@ -681,11 +679,11 @@ var idpSyncCreateCmd = &cobra.Command{
 }
 
 var idpSyncEditCmd = &cobra.Command{
-	Use:       "idpsync <google|azure|okta|scim> [id]",
-	Aliases:   []string{"ids"},
-	Short:     "Edit an IdP sync integration (id optional when there is only one of that kind)",
-	ValidArgs: idpSyncKinds,
-	Args:      cobra.RangeArgs(1, 2),
+	Use:               "idpsync <google|azure|okta|scim> [id]",
+	Aliases:           []string{"ids"},
+	Short:             "Edit an IdP sync integration (id optional when there is only one of that kind)",
+	ValidArgsFunction: idpSyncArgs(idpSyncKinds, 0),
+	Args:              cobra.RangeArgs(1, 2),
 	Run: func(cmd *cobra.Command, args []string) {
 		kind, id, ok := resolveIdPSync(args)
 		if !ok {
@@ -714,11 +712,11 @@ var idpSyncEditCmd = &cobra.Command{
 }
 
 var idpSyncDeleteCmd = &cobra.Command{
-	Use:       "idpsync <google|azure|okta|scim> [id]",
-	Aliases:   []string{"ids"},
-	Short:     "Delete an IdP sync integration",
-	ValidArgs: idpSyncKinds,
-	Args:      cobra.RangeArgs(1, 2),
+	Use:               "idpsync <google|azure|okta|scim> [id]",
+	Aliases:           []string{"ids"},
+	Short:             "Delete an IdP sync integration",
+	ValidArgsFunction: idpSyncArgs(idpSyncKinds, 0),
+	Args:              cobra.RangeArgs(1, 2),
 	Run: func(cmd *cobra.Command, args []string) {
 		kind, id, ok := resolveIdPSync(args)
 		if !ok {
@@ -740,13 +738,10 @@ var syncCmd = &cobra.Command{
 	Short: "Trigger an immediate IdP user/group sync",
 	Args:  cobra.RangeArgs(2, 3),
 	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		switch len(args) {
-		case 0:
+		if len(args) == 0 {
 			return []string{"idp"}, cobra.ShellCompDirectiveNoFileComp
-		case 1:
-			return []string{"google", "azure"}, cobra.ShellCompDirectiveNoFileComp
 		}
-		return nil, cobra.ShellCompDirectiveNoFileComp
+		return idpSyncArgs([]string{"google", "azure"}, 1)(cmd, args, toComplete)
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		if args[0] != "idp" {
@@ -770,11 +765,11 @@ var syncCmd = &cobra.Command{
 }
 
 var idpSyncLogsGetCmd = &cobra.Command{
-	Use:       "idpsynclogs <google|azure|okta|scim> [id]",
-	Aliases:   []string{"idpsynclog"},
-	Short:     "Show the sync logs of an IdP sync integration",
-	ValidArgs: idpSyncKinds,
-	Args:      cobra.RangeArgs(1, 2),
+	Use:               "idpsynclogs <google|azure|okta|scim> [id]",
+	Aliases:           []string{"idpsynclog"},
+	Short:             "Show the sync logs of an IdP sync integration",
+	ValidArgsFunction: idpSyncArgs(idpSyncKinds, 0),
+	Args:              cobra.RangeArgs(1, 2),
 	Run: func(cmd *cobra.Command, args []string) {
 		kind, id, ok := resolveIdPSync(args)
 		if !ok {
@@ -790,9 +785,10 @@ var idpSyncLogsGetCmd = &cobra.Command{
 }
 
 var idpSyncTokenCmd = &cobra.Command{
-	Use:   "scimtoken <okta|scim> [id]",
-	Short: "Regenerate the SCIM token of an Okta SCIM / SCIM sync integration",
-	Args:  cobra.RangeArgs(1, 2),
+	Use:               "scimtoken <okta|scim> [id]",
+	Short:             "Regenerate the SCIM token of an Okta SCIM / SCIM sync integration",
+	ValidArgsFunction: idpSyncArgs([]string{"okta", "scim"}, 0),
+	Args:              cobra.RangeArgs(1, 2),
 	Run: func(cmd *cobra.Command, args []string) {
 		kind, id, ok := resolveIdPSync(args)
 		if !ok {
@@ -1093,6 +1089,7 @@ func init() {
 		cmd.Flags().StringVar(&apiKeyFlag, "api-key", "", "API key (huntress)")
 		cmd.Flags().StringVar(&apiSecretFlag, "api-secret", "", "API secret (huntress)")
 		cmd.Flags().StringVar(&cloudIDFlag, "cloud-id", "", "CrowdStrike cloud: us-1, us-2, eu-1, ... (falcon)")
+		cmd.RegisterFlagCompletionFunc("cloud-id", staticCompletion([]string{"us-1", "us-2", "eu-1", "us-gov-1", "us-gov-2"}))
 		cmd.Flags().IntVar(&ztaThresholdFlag, "zta-threshold", 50, "Minimum Zero Trust Assessment score 0-100 (falcon)")
 		cmd.Flags().IntVar(&syncIntervalFlag, "sync-interval", 24, "Device last-sync requirement in hours, min 24")
 		cmd.RegisterFlagCompletionFunc("groups", validArgsFunc(groupNames))

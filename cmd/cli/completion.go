@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -326,4 +327,212 @@ func tenantNames() ([]string, error) {
 		names = append(names, fmt.Sprintf("%s\t%s (%s)", t.Name, t.Domain, t.Status))
 	}
 	return names, nil
+}
+
+// agentModelNames lists the models exposed by the account's agent providers (falling back to the catalog).
+func agentModelNames() ([]string, error) {
+	seen := map[string]bool{}
+	var names []string
+	add := func(id, desc string) {
+		if id != "" && !seen[id] {
+			seen[id] = true
+			names = append(names, fmt.Sprintf("%s\t%s", id, desc))
+		}
+	}
+	providers, err := c.GetAgentProviders()
+	if err != nil {
+		return nil, err
+	}
+	for _, p := range providers {
+		for _, m := range p.Models {
+			add(m.ID, p.Name)
+		}
+	}
+	if len(names) == 0 {
+		catalog, err := c.GetAgentCatalogProviders()
+		if err != nil {
+			return nil, err
+		}
+		for _, p := range catalog {
+			for _, m := range p.Models {
+				add(m.ID, p.Name)
+			}
+		}
+	}
+	return names, nil
+}
+
+// catalogModelCompletion completes --models on "create agentprovider" from the catalog of the chosen --type.
+func catalogModelCompletion(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	if c == nil {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+	catalog, err := c.GetAgentCatalogProviders()
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveError
+	}
+	var names []string
+	for _, p := range catalog {
+		if providerTypeFlag != "" && p.ID != providerTypeFlag {
+			continue
+		}
+		for _, m := range p.Models {
+			names = append(names, fmt.Sprintf("%s\t%s", m.ID, m.Label))
+		}
+	}
+	return names, cobra.ShellCompDirectiveNoFileComp
+}
+
+func agentSessionIDs() ([]string, error) {
+	resp, err := c.GetAgentAccessLogSessions(map[string]string{"page_size": "50"})
+	if err != nil {
+		return nil, err
+	}
+	var ids []string
+	for _, s := range resp.Data {
+		if s.SessionID != "" {
+			ids = append(ids, fmt.Sprintf("%s\t%s, %d requests, %s", s.SessionID, c.IDToName("user", s.UserID), s.RequestCount, s.StartedAt))
+		}
+	}
+	return ids, nil
+}
+
+func notificationChannelIDs() ([]string, error) {
+	channels, err := c.GetNotificationChannels()
+	if err != nil {
+		return nil, err
+	}
+	var ids []string
+	for _, ch := range channels {
+		ids = append(ids, fmt.Sprintf("%s\t%s %s", ch.ID, ch.Type, targetSummary(ch.Target)))
+	}
+	return ids, nil
+}
+
+func invoiceIDs() ([]string, error) {
+	invoices, err := c.GetBillingInvoices()
+	if err != nil {
+		return nil, err
+	}
+	var ids []string
+	for _, i := range invoices {
+		ids = append(ids, fmt.Sprintf("%s\t%s → %s", i.ID, i.PeriodStart, i.PeriodEnd))
+	}
+	return ids, nil
+}
+
+func priceIDs() ([]string, error) {
+	plans, err := c.GetBillingPlans()
+	if err != nil {
+		return nil, err
+	}
+	var ids []string
+	for _, p := range plans {
+		for _, pr := range p.Prices {
+			ids = append(ids, fmt.Sprintf("%s\t%s, %s/%s", pr.PriceID, p.Name, formatMinorUnits(pr.Price, pr.Currency), pr.Unit))
+		}
+	}
+	return ids, nil
+}
+
+func planTiers() ([]string, error) {
+	plans, err := c.GetBillingPlans()
+	if err != nil {
+		return nil, err
+	}
+	var tiers []string
+	for _, p := range plans {
+		tiers = append(tiers, strings.ToLower(p.Name))
+	}
+	return tiers, nil
+}
+
+func userIDs() ([]string, error) {
+	users, err := c.GetUsers()
+	if err != nil {
+		return nil, err
+	}
+	var ids []string
+	for _, u := range users {
+		ids = append(ids, fmt.Sprintf("%s\t%s %s", u.ID, u.Name, u.Email))
+	}
+	return ids, nil
+}
+
+var tenantRoles = []string{"admin", "user", "auditor", "network_admin", "billing_admin"}
+
+// tenantGroupCompletion completes <group>:<role> pairs: group names first, then roles after the colon.
+func tenantGroupCompletion(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	if c == nil {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+	// StringSlice flags: only complete the last comma-separated item.
+	prefix := ""
+	if i := strings.LastIndex(toComplete, ","); i >= 0 {
+		prefix, toComplete = toComplete[:i+1], toComplete[i+1:]
+	}
+	if group, _, ok := strings.Cut(toComplete, ":"); ok {
+		var out []string
+		for _, r := range tenantRoles {
+			out = append(out, prefix+group+":"+r)
+		}
+		return out, cobra.ShellCompDirectiveNoFileComp
+	}
+	groups, err := c.GetGroups()
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveError
+	}
+	var out []string
+	for _, g := range groups {
+		out = append(out, prefix+g.Name+":")
+	}
+	return out, cobra.ShellCompDirectiveNoFileComp | cobra.ShellCompDirectiveNoSpace
+}
+
+// idpSyncArgs completes <kind> then the IDs of that kind (kinds restricts the first word, e.g. google/azure for "sync idp").
+func idpSyncArgs(kinds []string, offset int) func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	return func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		switch len(args) - offset {
+		case 0:
+			return kinds, cobra.ShellCompDirectiveNoFileComp
+		case 1:
+			if c == nil {
+				return nil, cobra.ShellCompDirectiveNoFileComp
+			}
+			items, err := c.GetIdPSyncs(args[offset])
+			if err != nil {
+				return nil, cobra.ShellCompDirectiveError
+			}
+			var ids []string
+			for _, s := range items {
+				ids = append(ids, fmt.Sprintf("%d\t%s", s.ID, idpSyncDetail(s)))
+			}
+			return ids, cobra.ShellCompDirectiveNoFileComp
+		}
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+}
+
+// ingressPortNames completes allocation names of the peer given with --peer.
+func ingressPortNames(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	if c == nil || peerFlag == "" || len(args) > 0 {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+	peerID, err := c.ResolvePeerID(peerFlag)
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveError
+	}
+	ports, err := c.GetIngressPorts(peerID)
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveError
+	}
+	var names []string
+	for _, p := range ports {
+		names = append(names, fmt.Sprintf("%s\t%s", p.Name, p.IngressIP))
+	}
+	return names, cobra.ShellCompDirectiveNoFileComp
+}
+
+func noCompletion(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	return nil, cobra.ShellCompDirectiveNoFileComp
 }

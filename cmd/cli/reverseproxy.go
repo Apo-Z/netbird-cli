@@ -408,10 +408,11 @@ var ingressPortCreateCmd = &cobra.Command{
 }
 
 var ingressPortEditCmd = &cobra.Command{
-	Use:     "ingressport <name|id> --peer <peer>",
-	Aliases: []string{"iport"},
-	Short:   "Edit a port allocation (cloud)",
-	Args:    cobra.ExactArgs(1),
+	Use:               "ingressport <name|id> --peer <peer>",
+	Aliases:           []string{"iport"},
+	Short:             "Edit a port allocation (cloud)",
+	ValidArgsFunction: ingressPortNames,
+	Args:              cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		peerID, ok := requirePeerFlag()
 		if !ok {
@@ -450,10 +451,11 @@ var ingressPortEditCmd = &cobra.Command{
 }
 
 var ingressPortDeleteCmd = &cobra.Command{
-	Use:     "ingressport <name|id> --peer <peer>",
-	Aliases: []string{"iport"},
-	Short:   "Delete a port allocation (cloud)",
-	Args:    cobra.ExactArgs(1),
+	Use:               "ingressport <name|id> --peer <peer>",
+	Aliases:           []string{"iport"},
+	Short:             "Delete a port allocation (cloud)",
+	ValidArgsFunction: ingressPortNames,
+	Args:              cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		peerID, ok := requirePeerFlag()
 		if !ok {
