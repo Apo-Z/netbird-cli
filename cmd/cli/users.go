@@ -51,6 +51,9 @@ var userCreateCmd = &cobra.Command{
 					exitErr("create invite", err)
 					return
 				}
+				if result == nil {
+					return
+				}
 				data, err := c.PostRaw("/api/users/invites", result)
 				if err != nil {
 					exitErr("create invite", err)
@@ -71,6 +74,9 @@ var userCreateCmd = &cobra.Command{
 			})
 			if err != nil {
 				exitErr("create user", err)
+				return
+			}
+			if result == nil {
 				return
 			}
 			data, err := c.PostRaw("/api/users", result)

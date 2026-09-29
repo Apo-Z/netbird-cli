@@ -92,6 +92,7 @@ var networkCreateCmd = &cobra.Command{
 				"description": "",
 			})
 			if err != nil { exitErr("create network", err); return }
+			if result == nil { return }
 			if dryRunCheck(result) { return }
 			data, err := c.PostRaw("/api/networks", result)
 			if err != nil { exitErr("create network", err); return }

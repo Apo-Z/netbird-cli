@@ -95,6 +95,7 @@ var dnszoneCreateCmd = &cobra.Command{
 				"distribution_groups":  []string{},
 			})
 			if err != nil { exitErr("create dnszone", err); return }
+			if result == nil { return }
 			if dryRunCheck(result) { return }
 			data, err := c.PostRaw("/api/dns/zones", result)
 			if err != nil { exitErr("create dnszone", err); return }

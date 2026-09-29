@@ -55,6 +55,9 @@ var policyCreateCmd = &cobra.Command{
 				exitErr("create policy", err)
 				return
 			}
+			if result == nil {
+				return
+			}
 			if dryRunCheck(result) {
 				return
 			}

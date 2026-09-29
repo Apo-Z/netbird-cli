@@ -52,6 +52,9 @@ var groupCreateCmd = &cobra.Command{
 				exitErr("create group", err)
 				return
 			}
+			if result == nil {
+				return
+			}
 			if dryRunCheck(result) {
 				return
 			}

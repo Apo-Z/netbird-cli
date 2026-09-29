@@ -47,6 +47,7 @@ var idpCreateCmd = &cobra.Command{
 				"client_secret": "",
 			})
 			if err != nil { exitErr("create idp", err); return }
+			if result == nil { return }
 			if dryRunCheck(result) { return }
 			data, err := c.PostRaw("/api/identity-providers", result)
 			if err != nil { exitErr("create idp", err); return }

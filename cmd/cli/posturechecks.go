@@ -47,6 +47,9 @@ var posturecheckCreateCmd = &cobra.Command{
 				exitErr("create posturecheck", err)
 				return
 			}
+			if result == nil {
+				return
+			}
 			if dryRunCheck(result) {
 				return
 			}

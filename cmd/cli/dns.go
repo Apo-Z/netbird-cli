@@ -53,6 +53,9 @@ var nameserverCreateCmd = &cobra.Command{
 				exitErr("create nameserver", err)
 				return
 			}
+			if result == nil {
+				return
+			}
 			if dryRunCheck(result) {
 				return
 			}

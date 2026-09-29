@@ -49,6 +49,7 @@ var setupkeyCreateCmd = &cobra.Command{
 				"allow_extra_dns_labels": false,
 			})
 			if err != nil { exitErr("create setupkey", err); return }
+			if result == nil { return }
 			if dryRunCheck(result) { return }
 			data, err := c.PostRaw("/api/setup-keys", result)
 			if err != nil { exitErr("create setupkey", err); return }

@@ -50,6 +50,7 @@ var serviceCreateCmd = &cobra.Command{
 				"targets":             []map[string]interface{}{},
 			})
 			if err != nil { exitErr("create service", err); return }
+			if result == nil { return }
 			if dryRunCheck(result) { return }
 			data, err := c.PostRaw("/api/reverse-proxies/services", result)
 			if err != nil { exitErr("create service", err); return }

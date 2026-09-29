@@ -55,6 +55,9 @@ var routeCreateCmd = &cobra.Command{
 				exitErr("create route", err)
 				return
 			}
+			if result == nil {
+				return
+			}
 			if dryRunCheck(result) {
 				return
 			}

@@ -113,7 +113,7 @@ var describeGroupCmd = &cobra.Command{
 		if len(group.Resources) > 0 {
 			fmt.Println("\nResources:")
 			for _, r := range group.Resources {
-				fmt.Printf("  %s (%s — %s)\n", r.ID, r.Type)
+				fmt.Printf("  %s (%s)\n", r.ID, r.Type)
 			}
 		}
 
