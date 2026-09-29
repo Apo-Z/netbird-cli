@@ -9,7 +9,7 @@ make build          # → ./netbird-cli
 make install        # → /usr/local/bin/netbird-cli
 ```
 
-No CI config exists yet. There are no tests.
+There are no tests. CI (`.github/workflows/release.yml`) only builds and publishes release binaries on tag push.
 
 ## Config
 
@@ -29,6 +29,11 @@ cmd/cli/editor.go     — interactive YAML editor for `edit` and `create --edit`
 cmd/cli/apply.go      — declarative config (`apply -f <file.yaml>`)
 cmd/cli/generate.go   — YAML template generation (`generate user`, `generate group`, ...)
 cmd/cli/describe.go   — detailed resource view with cross-referencing
+cmd/cli/color.go      — ANSI color helpers (colorBool, colorStatus, colorState, colorDecision)
+cmd/cli/integrations.go — event streaming, notification channels, EDR (+ bypass/unbypass verbs), IdP sync (+ sync/regenerate verbs); shared helpers editTransformed, stripMasked, maskSecrets
+cmd/cli/reverseproxy.go — reverse proxy domains (+ validate verb), proxy tokens, proxy cluster delete, ingress peers and port allocations
+cmd/cli/msp.go        — MSP tenants (get/create/edit + `msp` subcommands) and `billing` subcommands
+cmd/cli/agentnetwork.go — Agent Network (AI agent gateway): providers, agent policies, guardrails, budget rules, settings, gateway, catalog, model discovery, usage, consumption, `events agent`, describe; apply support lives in apply.go
 cmd/cli/*.go          — one file per resource (users.go, groups.go, peers.go, policies.go, networks.go, setupkeys.go, posturechecks.go, routes.go, dns.go, dnszones.go, accounts.go, events.go, services.go, geolocations.go, jobs.go, idp.go, instance.go)
 internal/client/      — Netbird API client (Token auth, header `Authorization: Token <token>`)
   client.go           — core `Client` struct with doRequest/doGet/doPost/doPut/doDelete helpers, GetRaw/PutRaw/PostRaw, in-memory name→ID cache, IDToName reverse lookup
@@ -50,7 +55,7 @@ netbird apply -f <file.yaml>         # declarative config
 netbird generate <resource|all>      # YAML template
 ```
 
-Special verbs: `approve`, `block`, `unblock`, `invite`, `whoami`, `setup`, `events`.
+Special verbs: `approve`, `block`, `unblock`, `invite`, `whoami`, `setup`, `events`, `bypass`, `unbypass`, `sync`, `validate`, `regenerate`, `msp`, `billing`.
 
 When adding a new resource, register it under the appropriate verb (`getCmd.AddCommand`, `createCmd.AddCommand`, etc.) in the resource's `init()`.
 
@@ -63,6 +68,7 @@ Key resolution methods:
 - `ResolveUserID(nameOrEmailOrID)` — looks up by email, then name, then ID
 - `ResolvePeerID(nameOrID)` — looks up by name, falls back to ID
 - `ResolvePolicyID(nameOrID)`, `ResolveNetworkID(nameOrID)`
+- Agent Network: `ResolveAgentProviderID`, `ResolveAgentPolicyID`, `ResolveAgentGuardrailID`, `ResolveAgentBudgetRuleID` (one list call via `resolveByList`, which also fills the `IDToName` cache)
 
 Also available: `GetGroupByName`, `GetUserByEmail`, `GetPeerByName`, `GetPolicyByName`, `GetNetworkByName`.
 
@@ -130,3 +136,6 @@ The URL is passed in at construction (`NewNetbirdClient(url, token)`). All API p
 - `events traffic` and `events proxylogs` are cloud-only (`x-cloud-only: true`), will 404 on self-hosted instances
 - the table field whitelist in `format.go:getTableFields` must be updated when adding new resource types with new JSON fields, otherwise only `id` will appear in table output
 - describe commands now respect `-o json|yaml`; in default mode, rich human-readable output is used
+- the Agent Network OpenAPI spec lives upstream at `shared/management/http/api/openapi.yml` in netbirdio/netbird (tag `Agent Network`); ID-list fields (`source_groups`, `destination_provider_ids`, `guardrail_ids`, `target_groups`, `target_users`) are registered in `editor.go:knownIDFields` and `format.go:idListFields` so they are annotated/resolved by name
+- `internal/client/integrations.go` holds event streaming, notifications, reverse proxy domains/tokens, ingress, EDR, IdP sync, MSP and billing; EDR and IdP sync use one union struct each (`EDRIntegration`, `IdPSync`) over the per-vendor endpoints
+- secrets come back masked (`****`) on GET: edit commands must drop them via `editTransformed` + `stripMasked` rather than PUT them back

@@ -84,7 +84,13 @@ netbird unblock user <name>          # unblock a user
 netbird invite create ...            # invite a user
 netbird whoami                       # current authenticated user
 netbird setup --email ...            # initialize a fresh instance
-netbird events <type>                # audit, traffic, proxylogs
+netbird events <type>                # audit, traffic, agent
+netbird bypass|unbypass peer <name>  # EDR compliance bypass
+netbird sync idp <google|azure>      # trigger an IdP user/group sync
+netbird validate domain <domain>     # validate a custom reverse proxy domain
+netbird regenerate scimtoken <okta|scim>
+netbird msp <verify-dns|invite|accept|decline|unlink|subscribe> <tenant>
+netbird billing <usage|subscription|plans|invoices|invoice|portal|checkout|aws>
 ```
 
 ### Examples
@@ -169,10 +175,93 @@ netbird apply -f setup.yaml
 | `dnszones` | `dz` | | `dnsrecords` | `dr` |
 | `accounts` | `ac` | | `identityproviders` | `idp` |
 | `proxyclusters` | `pxc` | | `networkresources` | `nwr` |
+| `agentproviders` | `ap` | | `agentpolicies` | `apol` |
+| `guardrails` | `gr` | | `budgetrules` | `br` |
+| `agentsettings` | `as` | | `agentcatalog` | `acat` |
+| `agentusage` | `au` | | `agentconsumption` | `acons` |
+| `agentmodels` | `am` | | `agentgateway` | `agw` |
+| `eventstreams` | `es` | | `notificationchannels` | `nc` |
+| `notificationtypes` | `nt` | | `idpsyncs` | `ids` |
+| `domains` | `dom` | | `proxytokens` | `pxt` |
+| `ingresspeers` | `ip` | | `ingressports` | `iport` |
+| `tenants` | `tn` | | `edrbypassed` | `bypassed` |
 
 ## Supported resources
 
 `users`, `groups`, `peers`, `policies`, `networks`, `networkresources`, `setupkeys`, `posturechecks`, `routes`, `nameservers`, `dnssettings`, `dnszones`, `dnsrecords`, `accounts`, `tokens`, `services`, `proxyclusters`, `identityproviders`, `jobs`, `auditevents`, `trafficevents`, `proxylogs`, `countries`, `cities`, `instancestatus`, `instanceversion`
+
+Integrations: `eventstreams`, `notificationchannels`, `notificationtypes`, `edr`, `edrbypassed`, `idpsyncs`, `idpsynclogs`
+
+Reverse proxy & ingress: `domains`, `proxytokens`, `proxyclusters`, `ingresspeers`, `ingressports`
+
+MSP & billing: `tenants`, `msp ...`, `billing ...`
+
+Agent Network: `agentproviders`, `agentpolicies`, `guardrails`, `budgetrules`, `agentsettings`, `agentgateway`, `agentcatalog`, `agentmodels`, `agentconfig`, `agentusage`, `agentconsumption`, `events agent`
+
+## Integrations
+
+```bash
+# Stream audit events to a SIEM (datadog, s3, firehose, generic_http)
+netbird create eventstream --platform datadog --config api_key=$DD_API_KEY,api_url=https://http-intake.logs.datadoghq.eu
+
+# Notifications (see event codes: netbird get notificationtypes)
+netbird create notificationchannel --type email --emails ops@example.com --events user.join,peer.add
+netbird create notificationchannel --type webhook --url https://hooks.example.com/nb --header Authorization="Bearer x" --events peer.add
+
+# EDR: only compliant devices can connect (intune, sentinelone, falcon, huntress, fleetdm)
+netbird create edr intune --client-id <app-id> --tenant-id <tenant> --secret $SECRET --groups laptops
+netbird get edr
+netbird bypass peer laptop-bob                   # let one non-compliant peer through
+
+# IdP user/group sync (google, azure, okta, scim)
+netbird create idpsync google --customer-id C01abc --service-account-key-file sa.json --group-prefixes eng-
+netbird sync idp google
+netbird get idpsynclogs google
+netbird create idpsync okta --connection-name okta-prod   # prints the SCIM token once
+
+# Reverse proxy: custom domains and self-hosted proxy tokens
+netbird create domain --domain apps.example.com --cluster eu.proxy.netbird.io
+netbird validate domain apps.example.com
+netbird create proxytoken --name eu-proxy        # token shown once
+
+# Ingress peers / port forwarding (cloud)
+netbird create ingresspeer web-1
+netbird create ingressport --peer web-1 --name https --range 443/tcp
+```
+
+Secrets the API returns masked (`****`: event stream credentials, webhook header values, EDR/IdP credentials) are left out of `netbird edit`, so they are never overwritten with the mask; pass the flag again (`--config`, `--header`, `--secret`, ...) to change them.
+
+## Agent Network (AI agents)
+
+[Agent Network](https://netbird.io) is NetBird's gateway for AI agents: LLM traffic from peers goes through a NetBird endpoint (reachable only over the tunnel) that injects the upstream API key, enforces who can reach which provider, applies guardrails and token/USD caps, and logs usage and cost.
+
+```bash
+# 1. Bootstrap (once): self-hosted proxy cluster, or a managed gateway on NetBird Cloud
+netbird create agentsettings --proxy-address proxy.example.com
+netbird create agentgateway                      # cloud: managed gateway (idempotent)
+
+# 2. Add an LLM provider (catalog ids: netbird get agentcatalog)
+netbird get agentcatalog openai_api              # models + default prices
+netbird create agentprovider --name openai --type openai_api \
+    --url https://api.openai.com --api-key "$OPENAI_API_KEY" --models gpt-4o-mini,gpt-4o
+netbird get agentmodels --provider openai        # what the key can actually reach
+
+# 3. Guardrails, access policy, budgets
+netbird create guardrail --name audited --models gpt-4o-mini --prompt-capture --redact-pii
+netbird create agentpolicy --name devs-llm --source-groups devs --providers openai \
+    --guardrails audited --budget-user-cap 10 --window 24h
+netbird create budgetrule --name devs-daily --groups devs --budget-user-cap 5 --window 24h
+netbird describe agentpolicy devs-llm            # groups, providers, guardrails, limits resolved
+
+# 4. Observe
+netbird get agentconfig                          # endpoint + providers available to *you*
+netbird get agentusage --since 30d --granularity week
+netbird get agentconsumption                     # live counters vs. caps
+netbird events agent --since 24h --decision deny # access logs (deny reasons)
+netbird events agent --sessions --user alice@example.com
+```
+
+Everything is also declarative: `netbird generate agentnetwork > ai.yaml`, then `netbird apply -f ai.yaml`. Resources are matched by name; groups, users, providers and guardrails can be referenced by name, and `api_key: ${OPENAI_API_KEY}` is expanded from the environment so keys stay out of the file.
 
 ## Limitations
 
