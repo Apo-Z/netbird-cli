@@ -1,3 +1,5 @@
+
+
 # netbird-cli
 
 > [!WARNING]
@@ -28,7 +30,7 @@ A `kubectl`-style CLI to manage a [Netbird](https://netbird.io) instance via the
 ### From source (recommended)
 
 ```bash
-git clone https://github.com/anomalyco/netbird-cli.git
+git clone https://github.com/Apo-Z/netbird-cli.git
 cd netbird-cli
 make build          # → ./netbird-cli
 make install        # → /usr/local/bin/netbird-cli (requires sudo)
